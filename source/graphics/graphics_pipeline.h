@@ -18,10 +18,6 @@
 class GraphicsPipeline {
     Window* p_window;
 
-    std::map<unsigned int, VertexArrayObject*> m_vaos;
-    std::map<unsigned int, BufferObject<float>*> m_vbos;
-    std::map<unsigned int, BufferObject<int>*> m_ibos;
-
     ShaderObject* m_unlitVertexShader;
     ShaderObject* m_unlitFragmentShader;
     ShaderProgramObject* m_unlitProgram;
@@ -29,8 +25,8 @@ class GraphicsPipeline {
 public:
     GraphicsPipeline(Window* window);
 
-    void RegisterModel(Model model);
-    void RegisterScene(Scene scene);
+    void RegisterModel(Model& model);
+    void RegisterScene(Scene& scene);
 
     void Initialize();
     void RenderModel(Model model, Camera camera);

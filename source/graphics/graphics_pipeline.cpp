@@ -10,20 +10,34 @@ GraphicsPipeline::GraphicsPipeline(Window *window) {
     p_window = window;
 }
 
-void GraphicsPipeline::RegisterModel(Model model) {
-    m_vaos[model.id] = new VertexArrayObject();
-    m_vaos[model.id]->Bind();
+void GraphicsPipeline::RegisterModel(Model& model) {
+    model.vao = new VertexArrayObject();
+    model.vao->Bind();
 
     //vertex positions
-    m_vbos[model.id] = new BufferObject<float>();
-    m_vbos[model.id]->Upload(model.vertices);
-    m_vaos[model.id]->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
+    model.positionsBuffer = new BufferObject<float>();
+    model.positionsBuffer->Upload(model.vertices);
+    model.vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
+
+    //vertex uvs
+    if (model.uvs.size() > 0) {
+        model.uvsBuffer = new BufferObject<float>();
+        model.uvsBuffer->Upload(model.uvs);
+        model.vao->CreateVertexAttributePointer(1, 2, sizeof(float), GL_FLOAT);
+    }
+
+    //vertex normals
+    if (model.normals.size() > 0) {
+        model.normalsBuffer = new BufferObject<float>();
+        model.normalsBuffer->Upload(model.normals);
+        model.vao->CreateVertexAttributePointer(2, 3, sizeof(float), GL_FLOAT);
+    }
 
     //indices
-    m_ibos[model.id] = new BufferObject<int>();
-    m_ibos[model.id]->Upload(model.indices);
+    model.indicesBuffer = new BufferObject<int>();
+    model.indicesBuffer->Upload(model.indices);
 
-    m_vaos[model.id]->Unbind();
+    model.vao->Unbind();
 
     std::cout << "model: " << model.id << " has been registered" << std::endl;
 }
@@ -49,9 +63,9 @@ void GraphicsPipeline::Initialize() {
     m_unlitProgram->Compile(m_unlitVertexShader, m_unlitFragmentShader);
 }
 
-void GraphicsPipeline::RegisterScene(Scene scene) {
-    for (Model model : scene.models) {
-        RegisterModel(model);
+void GraphicsPipeline::RegisterScene(Scene& scene) {
+    for (int i = 0; i < scene.models.size(); i++) {
+        RegisterModel(scene.models[i]);
     }
 }
 
@@ -79,9 +93,9 @@ void GraphicsPipeline::RenderModel(Model model, Camera camera) {
     m_unlitProgram->UploadUniformMat4("view", view);
     m_unlitProgram->UploadUniformMat4("transform", transform);
 
-    m_vaos[model.id]->Bind();
+    model.vao->Bind();
     glDrawElements(GL_TRIANGLES, model.indices.size(), GL_UNSIGNED_INT, 0);
-    m_vaos[model.id]->Unbind();
+    model.vao->Unbind();
 }
 
 void GraphicsPipeline::RenderScene(Scene scene) {
@@ -90,8 +104,8 @@ void GraphicsPipeline::RenderScene(Scene scene) {
     glClearColor(0.5, 0.8, 1.0, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (Model model : scene.models) {
-        RenderModel(model, scene.camera);
+    for (int i = 0; i < scene.models.size(); i++) {
+        RenderModel(scene.models[i], scene.camera);
     }
 }
 
@@ -101,18 +115,6 @@ void GraphicsPipeline::PresentScene() {
 }
 
 void GraphicsPipeline::CleanUp() {
-    for (const auto& pair : m_vaos) {
-        delete pair.second;
-    }
-
-    for (const auto& pair : m_vbos) {
-        delete pair.second;
-    }
-
-    for (const auto& pair : m_ibos) {
-        delete pair.second;
-    }
-
     delete m_unlitProgram;
 }
 

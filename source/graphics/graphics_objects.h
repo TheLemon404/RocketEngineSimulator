@@ -18,16 +18,11 @@
 
 #endif //GRAPHICS_OBJECTS_H
 
+struct Model;
+
 enum CameraProjectionMode {
     PERSPECTIVE,
     ORTHOGRAPHIC
-};
-
-struct Model {
-    unsigned int id = rand();
-
-    std::vector<float> vertices = {};
-    std::vector<int> indices = {};
 };
 
 struct Camera {
@@ -94,4 +89,19 @@ struct  BufferObject {
     void Upload(std::vector<T> data);
     void Bind();
     void Unbind();
+};
+
+struct Model {
+    unsigned int id = rand();
+
+    std::vector<float> vertices = {};
+    std::vector<float> uvs = {};
+    std::vector<float> normals = {};
+    std::vector<int> indices = {};
+
+    VertexArrayObject* vao;
+    BufferObject<float>* positionsBuffer;
+    BufferObject<float>* uvsBuffer;
+    BufferObject<float>* normalsBuffer;
+    BufferObject<int>* indicesBuffer;
 };
