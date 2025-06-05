@@ -6,18 +6,28 @@
 
 Application::Application(std::string version) {
     m_version = version;
-    m_window = new Window("R.E.S " + version, 800, 600);
+    m_window = new Window("R.E.S " + version, 1600, 1200);
     m_graphicsPipeline = new GraphicsPipeline(m_window);
 }
 
 void Application::Initialize() {
     m_window->Initialize();
     m_graphicsPipeline->Initialize();
+
+    //testing
+    model = {};
+    model.vertices = {-1.0f, -1.0f, 0.0f,
+     1.0f, -1.0f, 0.0f,
+     1.0f,  1.0f, 0.0f
+    };
+    model.indices = {0, 1, 2};
+
+    m_graphicsPipeline->RegisterModel(model);
 }
 
 void Application::Run() {
     while (!m_window->ShouldClose()) {
-        m_graphicsPipeline->RenderScene();
+        m_graphicsPipeline->RenderScene(model);
         m_graphicsPipeline->PresentScene();
         m_window->Poll();
     }

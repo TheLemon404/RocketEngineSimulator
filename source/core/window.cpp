@@ -17,18 +17,17 @@ Window::Window(std::string title, unsigned int width, unsigned int height) {
 void Window::Initialize() {
     //initialize glfw
     glfwInit();
-    glfwSetErrorCallback(Window::GlfwErrorCallback);
     m_glfwWindow = glfwCreateWindow(m_width, m_height, m_title.c_str(), NULL, NULL);
 
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 1);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    glfwSwapInterval(0);
     glfwSetWindowUserPointer(m_glfwWindow, this);
 
     //callbacks
     glfwSetWindowSizeCallback(m_glfwWindow, GlfwWindowResizedCallback);
+    glfwSetErrorCallback(Window::GlfwErrorCallback);
 
     //initialize input
     Input::Initialize();
@@ -39,6 +38,7 @@ void Window::Initialize() {
 
     //set glfw context
     glfwMakeContextCurrent(m_glfwWindow);
+    glfwSwapInterval(0);
 }
 
 void Window::GlfwErrorCallback(int code, const char* description)

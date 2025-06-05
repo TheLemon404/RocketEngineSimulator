@@ -17,6 +17,9 @@ class Application {
     Window* m_window;
     GraphicsPipeline* m_graphicsPipeline;
 
+    //testing
+    Model model;
+
 public:
     Application(std::string version);
 

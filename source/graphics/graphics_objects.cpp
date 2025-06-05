@@ -4,10 +4,11 @@
 
 #include "graphics_objects.h"
 
-#include <stdexcept>
-
 #include "../core/io.h"
 #include "glad/glad.h"
+
+template struct BufferObject<float>;
+template struct BufferObject<int>;
 
 ShaderObject::ShaderObject(int type) {
     id = glCreateShader(type);
@@ -93,7 +94,10 @@ template<typename T> void BufferObject<T>::Upload(std::vector<T> data) {
     Bind();
 
     if (std::is_same<T, float>::value) {
-        glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(T), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), data.data(), GL_STATIC_DRAW);
+    }
+    else if (std::is_same<T, int>::value) {
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.size() * sizeof(int), data.data(), GL_STATIC_DRAW);
     }
 }
 

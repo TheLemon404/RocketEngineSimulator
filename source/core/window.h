@@ -31,7 +31,7 @@ public:
     Window(std::string title, unsigned int width, unsigned int height);
 
     GLFWwindow* GetGLFWWindow() { return m_glfwWindow; }
-    glm::vec2 GetDimentions() { return glm::vec2(m_width, m_height); }
+    glm::vec2 GetDimentions() const { return {m_width, m_height}; }
 
     void Initialize();
     bool ShouldClose();

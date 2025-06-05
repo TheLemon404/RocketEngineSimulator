@@ -7,6 +7,9 @@
 #ifndef GRAPHICS_PIPELINE_H
 #define GRAPHICS_PIPELINE_H
 
+#include <map>
+
+#include "graphics_objects.h"
 #include "glad/glad.h"
 #include "../core/window.h"
 
@@ -15,9 +18,22 @@
 class GraphicsPipeline {
     Window* p_window;
 
+    std::map<unsigned int, VertexArrayObject*> m_vaos;
+    std::map<unsigned int, BufferObject<float>*> m_vbos;
+    std::map<unsigned int, BufferObject<int>*> m_ibos;
+
+    ShaderObject* m_unlitVertexShader;
+    ShaderObject* m_unlitFragmentShader;
+    ShaderProgramObject* m_unlitProgram;
+
 public:
     GraphicsPipeline(Window* window);
+
+    void RegisterModel(Model model);
+
     void Initialize();
-    void RenderScene();
+    void RenderScene(Model model);
     void PresentScene();
+
+    void CleanUp();
 };

@@ -6,11 +6,19 @@
 
 #ifndef GRAPHICS_OBJECTS_H
 #define GRAPHICS_OBJECTS_H
+
 #include <string>
 #include <vector>
 
 #endif //GRAPHICS_OBJECTS_H
+struct Model {
+    unsigned int id;
 
+    Model() { id = rand(); };
+
+    std::vector<float> vertices;
+    std::vector<int> indices;
+};
 
 struct ShaderObject {
     unsigned int id;
@@ -41,7 +49,8 @@ struct VertexArrayObject {
     void Unbind();
 };
 
-template<typename T> struct BufferObject {
+template<typename T>
+struct  BufferObject {
     BufferObject();
     virtual ~BufferObject();
 
