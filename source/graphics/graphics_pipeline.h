@@ -30,9 +30,11 @@ public:
     GraphicsPipeline(Window* window);
 
     void RegisterModel(Model model);
+    void RegisterScene(Scene scene);
 
     void Initialize();
-    void RenderScene(Model model);
+    void RenderModel(Model model, Camera camera);
+    void RenderScene(Scene scene);
     void PresentScene();
 
     void CleanUp();

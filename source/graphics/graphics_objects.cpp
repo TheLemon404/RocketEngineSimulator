@@ -6,9 +6,22 @@
 
 #include "../core/io.h"
 #include "glad/glad.h"
+#include "glm/gtc/type_ptr.hpp"
 
 template struct BufferObject<float>;
 template struct BufferObject<int>;
+
+void Camera::RotateAround(float angle, glm::vec3 axis, glm::vec3 originPoint) {
+    // Create the transformation matrix
+    glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), -originPoint);
+    glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), angle, axis);
+    glm::mat4 inverseTranslationMatrix = glm::translate(glm::mat4(1.0f), originPoint);
+    glm::mat4 finalTransformation = inverseTranslationMatrix * rotationMatrix * translationMatrix;
+
+    // Apply the transformation to a point
+    glm::vec4 originalPoint = glm::vec4(position, 1.0f); // Assuming the object's origin
+    position = finalTransformation * originalPoint;
+}
 
 ShaderObject::ShaderObject(int type) {
     id = glCreateShader(type);
@@ -36,6 +49,30 @@ ShaderObject::~ShaderObject() {
 
 ShaderProgramObject::ShaderProgramObject() {
     id = glCreateProgram();
+}
+
+void ShaderProgramObject::UploadUniformFloat(const char *uniformName, float value) {
+    glUniform1f(glGetUniformLocation(id, uniformName), value);
+}
+
+void ShaderProgramObject::UploadUniformInt(const char *uniformName, int value) {
+    glUniform1i(glGetUniformLocation(id, uniformName), value);
+}
+
+void ShaderProgramObject::UploadUniformVec2(const char *uniformName, glm::vec2 value) {
+    glUniform2fv(glGetUniformLocation(id, uniformName), 1, glm::value_ptr(value));
+}
+
+void ShaderProgramObject::UploadUniformVec3(const char *uniformName, glm::vec3 value) {
+    glUniform3fv(glGetUniformLocation(id, uniformName), 1, glm::value_ptr(value));
+}
+
+void ShaderProgramObject::UploadUniformVec4(const char *uniformName, glm::vec4 value) {
+    glUniform4fv(glGetUniformLocation(id, uniformName), 1, glm::value_ptr(value));
+}
+
+void ShaderProgramObject::UploadUniformMat4(const char *uniformName, glm::mat4 value) {
+    glUniformMatrix4fv(glGetUniformLocation(id, uniformName), 1, GL_FALSE, glm::value_ptr(value));
 }
 
 void ShaderProgramObject::Compile(ShaderObject* vertexShader, ShaderObject* fragmentShader) {

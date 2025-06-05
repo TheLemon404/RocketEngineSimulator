@@ -10,14 +10,41 @@
 #include <string>
 #include <vector>
 
+#include "glm/mat4x4.hpp"
+#include "glm/vec2.hpp"
+#include "glm/vec3.hpp"
+#include "glm/vec4.hpp"
+#include "glm/ext/matrix_transform.hpp"
+
 #endif //GRAPHICS_OBJECTS_H
+
+enum CameraProjectionMode {
+    PERSPECTIVE,
+    ORTHOGRAPHIC
+};
+
 struct Model {
-    unsigned int id;
+    unsigned int id = rand();
 
-    Model() { id = rand(); };
+    std::vector<float> vertices = {};
+    std::vector<int> indices = {};
+};
 
-    std::vector<float> vertices;
-    std::vector<int> indices;
+struct Camera {
+    float fov = 45.0f;
+    float zoomFactor = 1.0f;
+    CameraProjectionMode projectionMode = PERSPECTIVE;
+    glm::vec3 position = glm::vec3(2.0f);
+    glm::vec3 rotation = glm::vec3(0.0f);
+    glm::vec3 target = glm::vec3(0.0f);
+    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+    void RotateAround(float angle, glm::vec3 axis, glm::vec3 originPoint);
+};
+
+struct Scene {
+    std::vector<Model> models;
+    Camera camera;
 };
 
 struct ShaderObject {
@@ -34,6 +61,14 @@ struct ShaderProgramObject {
     ShaderObject* fragmentShaderObject;
 
     ShaderProgramObject();
+
+    void UploadUniformFloat(const char* uniformName, float value);
+    void UploadUniformInt(const char* uniformName, int value);
+    void UploadUniformVec2(const char* uniformName, glm::vec2 value);
+    void UploadUniformVec3(const char* uniformName, glm::vec3 value);
+    void UploadUniformVec4(const char* uniformName, glm::vec4 value);
+    void UploadUniformMat4(const char* uniformName, glm::mat4 value);
+
     void Compile(ShaderObject* vertexShaderObject, ShaderObject* fragmentShaderObject);
     void Use();
     ~ShaderProgramObject();
