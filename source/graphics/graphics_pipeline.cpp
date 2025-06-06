@@ -19,18 +19,18 @@ void GraphicsPipeline::RegisterModel(Mesh& model) {
     model.positionsBuffer->Upload(model.vertices);
     model.vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
 
-    //vertex uvs
-    if (model.uvs.size() > 0) {
-        model.uvsBuffer = new BufferObject<float>();
-        model.uvsBuffer->Upload(model.uvs);
-        model.vao->CreateVertexAttributePointer(1, 2, sizeof(float), GL_FLOAT);
-    }
-
     //vertex normals
     if (model.normals.size() > 0) {
         model.normalsBuffer = new BufferObject<float>();
         model.normalsBuffer->Upload(model.normals);
-        model.vao->CreateVertexAttributePointer(2, 3, sizeof(float), GL_FLOAT);
+        model.vao->CreateVertexAttributePointer(1, 3, sizeof(float), GL_FLOAT);
+    }
+
+    //vertex uvs
+    if (model.uvs.size() > 0) {
+        model.uvsBuffer = new BufferObject<float>();
+        model.uvsBuffer->Upload(model.uvs);
+        model.vao->CreateVertexAttributePointer(2, 2, sizeof(float), GL_FLOAT);
     }
 
     //indices
@@ -61,6 +61,13 @@ void GraphicsPipeline::Initialize() {
     m_unlitFragmentShader->Load("resources/shaders/unlit.frag");
     m_unlitProgram = new ShaderProgramObject();
     m_unlitProgram->Compile(m_unlitVertexShader, m_unlitFragmentShader);
+
+    m_normalVertexShader = new ShaderObject(GL_VERTEX_SHADER);
+    m_normalVertexShader->Load("resources/shaders/normal.vert");
+    m_normalFragmentShader = new ShaderObject(GL_FRAGMENT_SHADER);
+    m_normalFragmentShader->Load("resources/shaders/normal.frag");
+    m_normalProgram = new ShaderProgramObject();
+    m_normalProgram->Compile(m_normalVertexShader, m_normalFragmentShader);
 }
 
 void GraphicsPipeline::RegisterScene(Scene& scene) {
@@ -71,7 +78,16 @@ void GraphicsPipeline::RegisterScene(Scene& scene) {
 
 void GraphicsPipeline::RenderModel(Mesh model, Camera camera) {
     //draw
-    m_unlitProgram->Use();
+    switch (model.renderMode) {
+        case NORMAL:
+            m_normalProgram->Use();
+            break;
+        case UNLIT:
+            m_unlitProgram->Use();
+            break;
+        default:
+            break;
+    }
 
     //calculate matricies
     glm::mat4 transform;
@@ -96,6 +112,9 @@ void GraphicsPipeline::RenderModel(Mesh model, Camera camera) {
     model.vao->Bind();
     glDrawElements(GL_TRIANGLES, model.indices.size(), GL_UNSIGNED_INT, 0);
     model.vao->Unbind();
+
+    //stop using any shader program
+    glUseProgram(0);
 }
 
 void GraphicsPipeline::RenderScene(Scene scene) {

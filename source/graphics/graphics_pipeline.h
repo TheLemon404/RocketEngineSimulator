@@ -22,6 +22,10 @@ class GraphicsPipeline {
     ShaderObject* m_unlitFragmentShader;
     ShaderProgramObject* m_unlitProgram;
 
+    ShaderObject* m_normalVertexShader;
+    ShaderObject* m_normalFragmentShader;
+    ShaderProgramObject* m_normalProgram;
+
 public:
     GraphicsPipeline(Window* window);
 

@@ -18,6 +18,11 @@
 
 #endif //GRAPHICS_OBJECTS_H
 
+enum MeshRenderMode {
+    NORMAL,
+    UNLIT
+};
+
 struct Mesh;
 
 enum CameraProjectionMode {
@@ -106,6 +111,8 @@ struct TextureObject {
 
 struct Mesh {
     unsigned int id = rand();
+
+    MeshRenderMode renderMode = NORMAL;
 
     static Mesh loadModelFromOBJ(std::string localPath, int meshIndex = 0);
 

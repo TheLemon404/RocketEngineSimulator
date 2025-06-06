@@ -20,7 +20,7 @@ void Application::Initialize() {
     scene = {};
     scene.camera = {};
 
-    scene.models.push_back(Mesh::loadModelFromOBJ("resources/meshes/monkey.obj"));
+    scene.models.push_back(Mesh::loadModelFromOBJ("resources/meshes/monkey_smooth.obj"));
 
     m_graphicsPipeline->RegisterScene(scene);
 }
