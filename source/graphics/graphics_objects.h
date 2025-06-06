@@ -18,7 +18,7 @@
 
 #endif //GRAPHICS_OBJECTS_H
 
-struct Model;
+struct Mesh;
 
 enum CameraProjectionMode {
     PERSPECTIVE,
@@ -26,7 +26,7 @@ enum CameraProjectionMode {
 };
 
 struct Camera {
-    float fov = 45.0f;
+    float fov = 70.0f;
     float zoomFactor = 1.0f;
     CameraProjectionMode projectionMode = PERSPECTIVE;
     glm::vec3 position = glm::vec3(2.0f);
@@ -38,7 +38,7 @@ struct Camera {
 };
 
 struct Scene {
-    std::vector<Model> models;
+    std::vector<Mesh> models;
     Camera camera;
 };
 
@@ -80,7 +80,7 @@ struct VertexArrayObject {
 };
 
 template<typename T>
-struct  BufferObject {
+struct BufferObject {
     BufferObject();
     virtual ~BufferObject();
 
@@ -91,8 +91,23 @@ struct  BufferObject {
     void Unbind();
 };
 
-struct Model {
+struct TextureObject {
+    unsigned int id;
+    unsigned int width, height;
+
+    TextureObject(unsigned int width, unsigned int height);
+
+    void Load(std::string localPath);
+    void SetData(void* data);
+
+    void Bind();
+    void Unbind();
+};
+
+struct Mesh {
     unsigned int id = rand();
+
+    static Mesh loadModelFromOBJ(std::string localPath, int meshIndex = 0);
 
     std::vector<float> vertices = {};
     std::vector<float> uvs = {};

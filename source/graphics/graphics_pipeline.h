@@ -25,11 +25,11 @@ class GraphicsPipeline {
 public:
     GraphicsPipeline(Window* window);
 
-    void RegisterModel(Model& model);
+    void RegisterModel(Mesh& model);
     void RegisterScene(Scene& scene);
 
     void Initialize();
-    void RenderModel(Model model, Camera camera);
+    void RenderModel(Mesh model, Camera camera);
     void RenderScene(Scene scene);
     void PresentScene();
 

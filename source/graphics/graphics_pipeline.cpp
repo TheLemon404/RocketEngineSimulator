@@ -10,7 +10,7 @@ GraphicsPipeline::GraphicsPipeline(Window *window) {
     p_window = window;
 }
 
-void GraphicsPipeline::RegisterModel(Model& model) {
+void GraphicsPipeline::RegisterModel(Mesh& model) {
     model.vao = new VertexArrayObject();
     model.vao->Bind();
 
@@ -69,7 +69,7 @@ void GraphicsPipeline::RegisterScene(Scene& scene) {
     }
 }
 
-void GraphicsPipeline::RenderModel(Model model, Camera camera) {
+void GraphicsPipeline::RenderModel(Mesh model, Camera camera) {
     //draw
     m_unlitProgram->Use();
 
@@ -82,7 +82,7 @@ void GraphicsPipeline::RenderModel(Model model, Camera camera) {
 
     glm::mat4 projection;
     if (camera.projectionMode == PERSPECTIVE) {
-        projection = glm::perspective(glm::radians(camera.fov), (float)(p_window->GetWindowDimentions().x / p_window->GetWindowDimentions().y), 0.001f, 10000.0f);
+        projection = glm::perspective(glm::radians(camera.fov), ((float)p_window->GetWindowDimentions().x / (float)p_window->GetWindowDimentions().y), 0.001f, 10000.0f);
     }
     else if (camera.projectionMode == ORTHOGRAPHIC) {
         float orthoWidth = ((float)p_window->GetWindowDimentions().x / 1000) * camera.zoomFactor;
@@ -101,7 +101,7 @@ void GraphicsPipeline::RenderModel(Model model, Camera camera) {
 void GraphicsPipeline::RenderScene(Scene scene) {
     //set opengl viewport and clear state
     glViewport(0,0,p_window->GetWindowDimentions().x,p_window->GetWindowDimentions().y);
-    glClearColor(0.5, 0.8, 1.0, 1.0f);
+    glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     for (int i = 0; i < scene.models.size(); i++) {

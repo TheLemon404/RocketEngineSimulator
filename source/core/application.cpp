@@ -20,13 +20,7 @@ void Application::Initialize() {
     scene = {};
     scene.camera = {};
 
-    scene.models.push_back({});
-    scene.models[0].vertices = {
-        -1.0f, -1.0f, 0.0f,
-         1.0f, -1.0f, 0.0f,
-         1.0f,  1.0f, 0.0f
-    };
-    scene.models[0].indices = {0, 1, 2};
+    scene.models.push_back(Mesh::loadModelFromOBJ("resources/meshes/monkey.obj"));
 
     m_graphicsPipeline->RegisterScene(scene);
 }

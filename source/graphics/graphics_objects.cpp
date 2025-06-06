@@ -4,7 +4,16 @@
 
 #include "graphics_objects.h"
 
+#include <iostream>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "../../dependencies/stbi/stb_image.h"
 #include "../core/io.h"
+#include "assimp/Exceptional.h"
+#include "assimp/Importer.hpp"
+#include "assimp/mesh.h"
+#include "assimp/postprocess.h"
+#include "assimp/scene.h"
 #include "glad/glad.h"
 #include "glm/gtc/type_ptr.hpp"
 
@@ -107,7 +116,7 @@ VertexArrayObject::VertexArrayObject() {
 }
 
 void VertexArrayObject::CreateVertexAttributePointer(int location, int length, int size, int type) {
-    glVertexAttribPointer(location, size, type, GL_FALSE, length * size, nullptr);
+    glVertexAttribPointer(location, length, type, GL_FALSE, length * size, (void*)0);
     glEnableVertexAttribArray(location);
 }
 
@@ -155,3 +164,93 @@ template<typename T> void BufferObject<T>::Unbind() {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 }
+
+TextureObject::TextureObject(unsigned int width, unsigned int height) {
+    this->width = width;
+    this->height = height;
+
+    glGenTextures(1, &id);
+}
+
+void TextureObject::Load(std::string localPath) {
+    Bind();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    int width, height, nrChannels;
+    unsigned char *data = stbi_load(localPath.c_str(), &width, &height, &nrChannels, 0);
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cout << "Failed to load texture" << std::endl;
+    }
+    stbi_image_free(data);
+}
+
+void TextureObject::SetData(void *data) {
+    Bind();
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+}
+
+
+void TextureObject::Bind() {
+    glBindTexture(GL_TEXTURE_2D, id);
+}
+
+void TextureObject::Unbind() {
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+Mesh Mesh::loadModelFromOBJ(std::string localPath, int meshIndex) {
+    Assimp::Importer Importer;
+
+    Mesh resultMesh{};
+
+    const aiScene* scene = Importer.ReadFile(localPath.c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
+    aiMesh* mesh;
+
+    if (scene) {
+        mesh = scene->mMeshes[meshIndex];
+        if (mesh) {
+            for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
+                const aiVector3D* pPos = &(mesh->mVertices[i]);
+                const aiVector3D* pNormal = &(mesh->mNormals[i]);
+                if (!mesh->HasTextureCoords(0)) {
+                    throw std::runtime_error("imported OBJ mesh must have uvs");
+                }
+                const aiVector3D* pTexCoord = &(mesh->mTextureCoords[0][i]);
+
+                resultMesh.vertices.push_back(pPos->x);
+                resultMesh.vertices.push_back(pPos->y);
+                resultMesh.vertices.push_back(pPos->z);
+                resultMesh.normals.push_back(pNormal->x);
+                resultMesh.normals.push_back(pNormal->y);
+                resultMesh.normals.push_back(pNormal->z);
+                resultMesh.uvs.push_back(pTexCoord->x);
+                resultMesh.uvs.push_back(pTexCoord->y);
+            }
+
+            for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
+                const aiFace& Face = mesh->mFaces[i];
+                assert(Face.mNumIndices == 3);
+                resultMesh.indices.push_back(Face.mIndices[0]);
+                resultMesh.indices.push_back(Face.mIndices[1]);
+                resultMesh.indices.push_back(Face.mIndices[2]);
+            }
+
+            return resultMesh;
+        }
+
+        throw runtime_error("Failed to load mesh file: " + localPath);
+    }
+
+    throw runtime_error("Failed to load scene for mesh file: " + localPath);
+}
+
