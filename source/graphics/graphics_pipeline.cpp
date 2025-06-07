@@ -196,5 +196,9 @@ void GraphicsPipeline::PresentScene() {
 
 void GraphicsPipeline::CleanUp() {
     delete m_unlitProgram;
+    delete m_checkersProgram;
+    delete m_gridProgram;
+    delete m_quadVAO;
+    delete m_normalProgram;
 }
 
