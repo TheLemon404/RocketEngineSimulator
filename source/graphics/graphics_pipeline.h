@@ -18,6 +18,7 @@
 class GraphicsPipeline {
     Window* p_window;
 
+    //shaders
     ShaderObject* m_unlitVertexShader;
     ShaderObject* m_unlitFragmentShader;
     ShaderProgramObject* m_unlitProgram;
@@ -25,6 +26,19 @@ class GraphicsPipeline {
     ShaderObject* m_normalVertexShader;
     ShaderObject* m_normalFragmentShader;
     ShaderProgramObject* m_normalProgram;
+
+    ShaderObject* m_gridVertexShader;
+    ShaderObject* m_gridFragmentShader;
+    ShaderProgramObject* m_gridProgram;
+
+    ShaderObject* m_screenSpaceVertexShader;
+    ShaderObject* m_checkersFragmentShader;
+    ShaderProgramObject* m_checkersProgram;
+
+    //fullscreen quad
+    VertexArrayObject* m_quadVAO;
+    BufferObject<float>* m_quadPositions;
+    BufferObject<int>* m_quadIndices;
 
 public:
     GraphicsPipeline(Window* window);
