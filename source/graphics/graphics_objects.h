@@ -18,6 +18,8 @@
 
 #endif //GRAPHICS_OBJECTS_H
 
+struct Spline;
+
 enum MeshRenderMode {
     NORMAL,
     UNLIT
@@ -43,7 +45,8 @@ struct Camera {
 };
 
 struct Scene {
-    std::vector<Mesh> models;
+    std::vector<Mesh> meshes;
+    std::vector<Spline> splines;
     Camera camera;
 };
 
@@ -59,6 +62,8 @@ struct ShaderProgramObject {
     unsigned int id;
     ShaderObject* vertexShaderObject;
     ShaderObject* fragmentShaderObject;
+    ShaderObject* tesselationControlShaderObject;
+    ShaderObject* tesselationEvaluationShaderObject;
 
     ShaderProgramObject();
 
@@ -70,6 +75,7 @@ struct ShaderProgramObject {
     void UploadUniformMat4(const char* uniformName, glm::mat4 value);
 
     void Compile(ShaderObject* vertexShaderObject, ShaderObject* fragmentShaderObject);
+    void CompileTesselation(ShaderObject* vertexShader, ShaderObject* controlShader, ShaderObject* evaluationShader, ShaderObject* fragmentShader);
     void Use();
     ~ShaderProgramObject();
 };
@@ -114,7 +120,9 @@ struct Mesh {
 
     MeshRenderMode renderMode = NORMAL;
 
-    static Mesh loadModelFromOBJ(std::string localPath, int meshIndex = 0);
+    static Mesh LoadmeshFromOBJ(std::string localPath, int meshIndex = 0);
+
+    void UpdateBuffers();
 
     std::vector<float> vertices = {};
     std::vector<float> uvs = {};
@@ -126,4 +134,16 @@ struct Mesh {
     BufferObject<float>* uvsBuffer;
     BufferObject<float>* normalsBuffer;
     BufferObject<int>* indicesBuffer;
+};
+
+struct Spline {
+    unsigned int id = rand();
+    glm::vec3 p0, p1, p2, p3;
+
+    Spline(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3) : p0(p0), p1(p1), p2(p2), p3(p3) {}
+
+    std::vector<float> ExtractPositions();
+
+    VertexArrayObject* vao;
+    BufferObject<float>* positionsBuffer;
 };

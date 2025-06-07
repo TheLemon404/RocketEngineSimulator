@@ -101,6 +101,27 @@ void ShaderProgramObject::Compile(ShaderObject* vertexShader, ShaderObject* frag
     }
 }
 
+void ShaderProgramObject::CompileTesselation(ShaderObject *vertexShader, ShaderObject *controlShader, ShaderObject *evaluationShader, ShaderObject *fragmentShader) {
+    vertexShaderObject = vertexShader;
+    fragmentShaderObject = fragmentShader;
+    tesselationControlShaderObject = controlShader;
+    tesselationEvaluationShaderObject = evaluationShader;
+
+    glAttachShader(id, vertexShader->id);
+    glAttachShader(id, fragmentShader->id);
+    glAttachShader(id, controlShader->id);
+    glAttachShader(id, evaluationShader->id);
+    glLinkProgram(id);
+
+    int success;
+    char infoLog[512];
+    glGetProgramiv(id, GL_LINK_STATUS, &success);
+    if(!success) {
+        glGetProgramInfoLog(id, 512, NULL, infoLog);
+        throw std::runtime_error(infoLog);
+    }
+}
+
 void ShaderProgramObject::Use() {
     glUseProgram(id);
 }
@@ -108,6 +129,12 @@ void ShaderProgramObject::Use() {
 ShaderProgramObject::~ShaderProgramObject() {
     delete vertexShaderObject;
     delete fragmentShaderObject;
+    if (tesselationControlShaderObject) {
+        delete tesselationControlShaderObject;
+    }
+    if (tesselationEvaluationShaderObject) {
+        delete tesselationEvaluationShaderObject;
+    }
     glDeleteProgram(id);
 }
 
@@ -208,7 +235,7 @@ void TextureObject::Unbind() {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-Mesh Mesh::loadModelFromOBJ(std::string localPath, int meshIndex) {
+Mesh Mesh::LoadmeshFromOBJ(std::string localPath, int meshIndex) {
     Assimp::Importer Importer;
 
     Mesh resultMesh{};
@@ -252,5 +279,14 @@ Mesh Mesh::loadModelFromOBJ(std::string localPath, int meshIndex) {
     }
 
     throw runtime_error("Failed to load scene for mesh file: " + localPath);
+}
+
+void Mesh::UpdateBuffers() {
+    vao->Bind();
+
+    positionsBuffer->Upload(vertices);
+    indicesBuffer->Upload(indices);
+
+    vao->Unbind();
 }
 

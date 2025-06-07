@@ -20,7 +20,9 @@ void Application::Initialize() {
     scene = {};
     scene.camera = {};
 
-    scene.models.push_back(Mesh::loadModelFromOBJ("resources/meshes/monkey_smooth.obj"));
+    scene.meshes.push_back(Mesh::LoadmeshFromOBJ("resources/meshes/monkey_smooth.obj"));
+    scene.splines.push_back({glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(-0.5f, 0.5f, 0.7f), glm::vec3(0.5f, -0.5f, 0.9f), glm::vec3(0.0f, 0.0f, 1.1f)});
+    scene.splines.push_back({glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(-1.0f, 0.0f, -0.5f), glm::vec3(1.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 1.0f)});
 
     m_graphicsPipeline->RegisterScene(scene);
 }

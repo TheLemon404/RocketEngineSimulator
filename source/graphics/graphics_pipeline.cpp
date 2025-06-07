@@ -10,36 +10,50 @@ GraphicsPipeline::GraphicsPipeline(Window *window) {
     p_window = window;
 }
 
-void GraphicsPipeline::RegisterModel(Mesh& model) {
-    model.vao = new VertexArrayObject();
-    model.vao->Bind();
+void GraphicsPipeline::RegisterMesh(Mesh& mesh) {
+    mesh.vao = new VertexArrayObject();
+    mesh.vao->Bind();
 
     //vertex positions
-    model.positionsBuffer = new BufferObject<float>();
-    model.positionsBuffer->Upload(model.vertices);
-    model.vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
+    mesh.positionsBuffer = new BufferObject<float>();
+    mesh.positionsBuffer->Upload(mesh.vertices);
+    mesh.vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
 
     //vertex normals
-    if (model.normals.size() > 0) {
-        model.normalsBuffer = new BufferObject<float>();
-        model.normalsBuffer->Upload(model.normals);
-        model.vao->CreateVertexAttributePointer(1, 3, sizeof(float), GL_FLOAT);
+    if (mesh.normals.size() > 0) {
+        mesh.normalsBuffer = new BufferObject<float>();
+        mesh.normalsBuffer->Upload(mesh.normals);
+        mesh.vao->CreateVertexAttributePointer(1, 3, sizeof(float), GL_FLOAT);
     }
 
     //vertex uvs
-    if (model.uvs.size() > 0) {
-        model.uvsBuffer = new BufferObject<float>();
-        model.uvsBuffer->Upload(model.uvs);
-        model.vao->CreateVertexAttributePointer(2, 2, sizeof(float), GL_FLOAT);
+    if (mesh.uvs.size() > 0) {
+        mesh.uvsBuffer = new BufferObject<float>();
+        mesh.uvsBuffer->Upload(mesh.uvs);
+        mesh.vao->CreateVertexAttributePointer(2, 2, sizeof(float), GL_FLOAT);
     }
 
     //indices
-    model.indicesBuffer = new BufferObject<int>();
-    model.indicesBuffer->Upload(model.indices);
+    mesh.indicesBuffer = new BufferObject<int>();
+    mesh.indicesBuffer->Upload(mesh.indices);
 
-    model.vao->Unbind();
+    mesh.vao->Unbind();
 
-    std::cout << "model: " << model.id << " has been registered" << std::endl;
+    std::cout << "mesh: " << mesh.id << " has been registered" << std::endl;
+}
+
+void GraphicsPipeline::RegisterSpline(Spline &spline) {
+    spline.vao = new VertexArrayObject();
+    spline.vao->Bind();
+
+    //vertex positions
+    spline.positionsBuffer = new BufferObject<float>();
+    spline.positionsBuffer->Upload(spline.ExtractPositions());
+    spline.vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
+
+    spline.vao->Unbind();
+
+    std::cout << "spline: " << spline.id << " has been registered" << std::endl;
 }
 
 void GraphicsPipeline::Initialize() {
@@ -53,6 +67,9 @@ void GraphicsPipeline::Initialize() {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glViewport(0,0,p_window->GetWindowDimentions().x,p_window->GetWindowDimentions().y);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glPatchParameteri(GL_PATCH_VERTICES, 4);
 
     //load and compile shaders
     m_unlitVertexShader = new ShaderObject(GL_VERTEX_SHADER);
@@ -83,6 +100,17 @@ void GraphicsPipeline::Initialize() {
     m_checkersProgram = new ShaderProgramObject();
     m_checkersProgram->Compile(m_screenSpaceVertexShader, m_checkersFragmentShader);
 
+    m_splineVertexShader = new ShaderObject(GL_VERTEX_SHADER);
+    m_splineVertexShader->Load("resources/shaders/spline.vert");
+    m_splineFragmentShader = new ShaderObject(GL_FRAGMENT_SHADER);
+    m_splineFragmentShader->Load("resources/shaders/spline.frag");
+    m_splineTesselationControlShader = new ShaderObject(GL_TESS_CONTROL_SHADER);
+    m_splineTesselationControlShader->Load("resources/shaders/spline.tcs");
+    m_splineTesselationEvaluationShader = new ShaderObject(GL_TESS_EVALUATION_SHADER);
+    m_splineTesselationEvaluationShader->Load("resources/shaders/spline.tes");
+    m_splineProgram = new ShaderProgramObject();
+    m_splineProgram->CompileTesselation(m_splineVertexShader, m_splineTesselationControlShader, m_splineTesselationEvaluationShader, m_splineFragmentShader);
+
     //create fullscreen quad
     m_quadVAO = new VertexArrayObject();
     m_quadVAO->Bind();
@@ -101,14 +129,17 @@ void GraphicsPipeline::Initialize() {
 }
 
 void GraphicsPipeline::RegisterScene(Scene& scene) {
-    for (int i = 0; i < scene.models.size(); i++) {
-        RegisterModel(scene.models[i]);
+    for (int i = 0; i < scene.meshes.size(); i++) {
+        RegisterMesh(scene.meshes[i]);
+    }
+    for (int i = 0; i < scene.splines.size(); i++) {
+        RegisterSpline(scene.splines[i]);
     }
 }
 
-void GraphicsPipeline::RenderModel(Mesh model, Camera camera) {
+void GraphicsPipeline::Rendermesh(Mesh mesh, Camera camera, glm::mat4 view, glm::mat4 projection) {
     //draw
-    switch (model.renderMode) {
+    switch (mesh.renderMode) {
         case NORMAL:
             m_normalProgram->Use();
             break;
@@ -119,31 +150,32 @@ void GraphicsPipeline::RenderModel(Mesh model, Camera camera) {
             break;
     }
 
-    //calculate matricies
-    glm::mat4 transform;
-    transform = glm::identity<glm::mat4>();
+    glm::mat4 transform = glm::identity<glm::mat4>();
 
-    glm::mat4 view;
-    view = glm::lookAt(camera.position, camera.target, camera.up);
-
-    glm::mat4 projection;
-    if (camera.projectionMode == PERSPECTIVE) {
-        projection = glm::perspective(glm::radians(camera.fov), ((float)p_window->GetWindowDimentions().x / (float)p_window->GetWindowDimentions().y), 0.001f, 10000.0f);
-    }
-    else if (camera.projectionMode == ORTHOGRAPHIC) {
-        float orthoWidth = ((float)p_window->GetWindowDimentions().x / 1000) * camera.zoomFactor;
-        float orthoHeight = ((float)p_window->GetWindowDimentions().y / 1000) * camera.zoomFactor;
-        projection = glm::ortho(-orthoWidth, orthoWidth, -orthoHeight, orthoHeight, 0.001f, 10000.0f);
-    }
     m_unlitProgram->UploadUniformMat4("projection", projection);
     m_unlitProgram->UploadUniformMat4("view", view);
     m_unlitProgram->UploadUniformMat4("transform", transform);
 
-    model.vao->Bind();
-    glDrawElements(GL_TRIANGLES, model.indices.size(), GL_UNSIGNED_INT, 0);
-    model.vao->Unbind();
+    mesh.vao->Bind();
+    glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
+    mesh.vao->Unbind();
 
     //stop using any shader program
+    glUseProgram(0);
+}
+
+void GraphicsPipeline::RenderSpline(Spline spline, Camera camera, glm::mat4 view, glm::mat4 projection) {
+    //draw curves (for debug)
+    m_splineProgram->Use();
+    m_splineProgram->UploadUniformMat4("view", view);
+    m_splineProgram->UploadUniformMat4("projection", projection);
+    m_splineProgram->UploadUniformVec4("tint", glm::vec4(1.0f));
+    m_splineProgram->UploadUniformMat4("transform", glm::identity<glm::mat4>());
+    m_splineProgram->UploadUniformFloat("segmentCount", 40);
+    m_splineProgram->UploadUniformFloat("stripCount", 1);
+    spline.vao->Bind();
+    glDrawArrays(GL_PATCHES, 0, 4);
+    spline.vao->Unbind();
     glUseProgram(0);
 }
 
@@ -152,6 +184,20 @@ void GraphicsPipeline::RenderScene(Scene scene) {
     glViewport(0,0,p_window->GetWindowDimentions().x,p_window->GetWindowDimentions().y);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    //calculate matricies
+    glm::mat4 view;
+    view = glm::lookAt(scene.camera.position, scene.camera.target, scene.camera.up);
+
+    glm::mat4 projection;
+    if (scene.camera.projectionMode == PERSPECTIVE) {
+        projection = glm::perspective(glm::radians(scene.camera.fov), ((float)p_window->GetWindowDimentions().x / (float)p_window->GetWindowDimentions().y), 0.001f, 10000.0f);
+    }
+    else if (scene.camera.projectionMode == ORTHOGRAPHIC) {
+        float orthoWidth = ((float)p_window->GetWindowDimentions().x / 1000) * scene.camera.zoomFactor;
+        float orthoHeight = ((float)p_window->GetWindowDimentions().y / 1000) * scene.camera.zoomFactor;
+        projection = glm::ortho(-orthoWidth, orthoWidth, -orthoHeight, orthoHeight, 0.001f, 10000.0f);
+    }
 
     glDisable(GL_DEPTH_TEST);
     //render checkered background
@@ -164,16 +210,6 @@ void GraphicsPipeline::RenderScene(Scene scene) {
 
     //render infinite grid
     m_gridProgram->Use();
-    glm::mat4 view = glm::lookAt(scene.camera.position, scene.camera.target, scene.camera.up);
-    glm::mat4 projection;
-    if (scene.camera.projectionMode == PERSPECTIVE) {
-        projection = glm::perspective(glm::radians(scene.camera.fov), ((float)p_window->GetWindowDimentions().x / (float)p_window->GetWindowDimentions().y), 0.001f, 10000.0f);
-    }
-    else if (scene.camera.projectionMode == ORTHOGRAPHIC) {
-        float orthoWidth = ((float)p_window->GetWindowDimentions().x / 1000) * scene.camera.zoomFactor;
-        float orthoHeight = ((float)p_window->GetWindowDimentions().y / 1000) * scene.camera.zoomFactor;
-        projection = glm::ortho(-orthoWidth, orthoWidth, -orthoHeight, orthoHeight, 0.001f, 10000.0f);
-    }
     m_gridProgram->UploadUniformMat4("view", view);
     m_gridProgram->UploadUniformMat4("projection", projection);
     m_quadVAO->Bind();
@@ -183,9 +219,14 @@ void GraphicsPipeline::RenderScene(Scene scene) {
 
     glEnable(GL_DEPTH_TEST);
 
-    //render models in scene
-    for (int i = 0; i < scene.models.size(); i++) {
-        RenderModel(scene.models[i], scene.camera);
+    //render meshs in scene
+    for (int i = 0; i < scene.meshes.size(); i++) {
+        Rendermesh(scene.meshes[i], scene.camera, view, projection);
+    }
+
+    //render splines
+    for (int i = 0; i < scene.splines.size(); i++) {
+        RenderSpline(scene.splines[i], scene.camera, view, projection);
     }
 }
 
@@ -200,5 +241,6 @@ void GraphicsPipeline::CleanUp() {
     delete m_gridProgram;
     delete m_quadVAO;
     delete m_normalProgram;
+    delete m_splineProgram;
 }
 

@@ -35,6 +35,12 @@ class GraphicsPipeline {
     ShaderObject* m_checkersFragmentShader;
     ShaderProgramObject* m_checkersProgram;
 
+    ShaderObject* m_splineVertexShader;
+    ShaderObject* m_splineFragmentShader;
+    ShaderObject* m_splineTesselationEvaluationShader;
+    ShaderObject* m_splineTesselationControlShader;
+    ShaderProgramObject* m_splineProgram;
+
     //fullscreen quad
     VertexArrayObject* m_quadVAO;
     BufferObject<float>* m_quadPositions;
@@ -43,11 +49,13 @@ class GraphicsPipeline {
 public:
     GraphicsPipeline(Window* window);
 
-    void RegisterModel(Mesh& model);
+    void RegisterMesh(Mesh& mesh);
+    void RegisterSpline(Spline& spline);
     void RegisterScene(Scene& scene);
 
     void Initialize();
-    void RenderModel(Mesh model, Camera camera);
+    void Rendermesh(Mesh mesh, Camera camera, glm::mat4 view, glm::mat4 projection);
+    void RenderSpline(Spline spline, Camera camera, glm::mat4 view, glm::mat4 projection);
     void RenderScene(Scene scene);
     void PresentScene();
 
