@@ -4,6 +4,8 @@
 
 #include "application.h"
 
+#include <numbers>
+
 #include "input.h"
 
 Application::Application(std::string version) {
@@ -21,7 +23,7 @@ void Application::Initialize() {
     scene.camera = {};
 
     scene.meshes.push_back(Mesh::LoadmeshFromOBJ("resources/meshes/monkey_smooth.obj"));
-    scene.splines.push_back({glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(-0.5f, 0.5f, 0.7f), glm::vec3(0.5f, -0.5f, 0.9f), glm::vec3(0.0f, 0.0f, 1.1f)});
+    scene.meshes[0].position.x = 2.0f;
     scene.splines.push_back({glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(-1.0f, 0.0f, -0.5f), glm::vec3(1.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 1.0f)});
 
     m_graphicsPipeline->RegisterScene(scene);
@@ -59,7 +61,7 @@ void Application::Run() {
 
         //drawing
         m_graphicsPipeline->RenderScene(scene);
-        m_graphicsPipeline->PresentScene();
+        m_graphicsPipeline->PresentScene(scene);
 
         //reset state
         Input::Refresh();
@@ -67,6 +69,7 @@ void Application::Run() {
 }
 
 void Application::Close() {
+    m_graphicsPipeline->CleanUp();
     m_window->Close();
 }
 

@@ -8,4 +8,4 @@ file(GLOB_RECURSE src CONFIGURE_DEPENDS "*.cpp" "*.h" ${PROJECT_SOURCE_DIR}/depe
 add_executable(RES ${src})
 
 target_include_directories(RES PRIVATE ${ASSIMP_INCLUDE_DIRS})
-target_link_libraries(RES PRIVATE glfw glm glad ImGui ImGuizmo ImOGuizmo ${ASSIMP_LIBRARIES})
+target_link_libraries(RES PRIVATE glfw glm glad ImGui ImGuiBackends ImGuizmo ImOGuizmo ${ASSIMP_LIBRARIES})

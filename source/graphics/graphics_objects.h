@@ -60,10 +60,10 @@ struct ShaderObject {
 
 struct ShaderProgramObject {
     unsigned int id;
-    ShaderObject* vertexShaderObject;
-    ShaderObject* fragmentShaderObject;
-    ShaderObject* tesselationControlShaderObject;
-    ShaderObject* tesselationEvaluationShaderObject;
+    ShaderObject* vertexShaderObject = nullptr;
+    ShaderObject* fragmentShaderObject = nullptr;
+    ShaderObject* tesselationControlShaderObject = nullptr;
+    ShaderObject* tesselationEvaluationShaderObject = nullptr;
 
     ShaderProgramObject();
 
@@ -123,6 +123,10 @@ struct Mesh {
     static Mesh LoadmeshFromOBJ(std::string localPath, int meshIndex = 0);
 
     void UpdateBuffers();
+
+    glm::vec3 position = glm::vec3(0.0f);
+    glm::vec3 rotation = glm::vec3(0.0f);
+    glm::vec3 scale = glm::vec3(1.0f);
 
     std::vector<float> vertices = {};
     std::vector<float> uvs = {};

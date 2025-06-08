@@ -53,7 +53,7 @@ void ShaderObject::Load(std::string localPath) {
 }
 
 ShaderObject::~ShaderObject() {
-    glDeleteShader(id);
+    if (id != 0) glDeleteShader(id);
 }
 
 ShaderProgramObject::ShaderProgramObject() {
@@ -129,12 +129,9 @@ void ShaderProgramObject::Use() {
 ShaderProgramObject::~ShaderProgramObject() {
     delete vertexShaderObject;
     delete fragmentShaderObject;
-    if (tesselationControlShaderObject) {
-        delete tesselationControlShaderObject;
-    }
-    if (tesselationEvaluationShaderObject) {
-        delete tesselationEvaluationShaderObject;
-    }
+    delete tesselationControlShaderObject;
+    delete tesselationEvaluationShaderObject;
+
     glDeleteProgram(id);
 }
 

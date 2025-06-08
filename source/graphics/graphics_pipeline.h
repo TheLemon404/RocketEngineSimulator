@@ -56,13 +56,14 @@ public:
     void Initialize();
 
     //immediate-mode drawing
-    void DrawSplineGizmos(Spline spline);
+    void DrawDebugSphere(glm::vec3 center, float radius, glm::vec3 color, Camera camera);
+    void DrawSplineGizmos(Spline spline, Camera camera);
 
     //rendering
     void Rendermesh(Mesh mesh, Camera camera, glm::mat4 view, glm::mat4 projection);
     void RenderSpline(Spline spline, Camera camera, glm::mat4 view, glm::mat4 projection);
     void RenderScene(Scene scene);
-    void PresentScene();
+    void PresentScene(Scene scene);
 
     void CleanUp();
 };
