@@ -67,8 +67,6 @@ void GraphicsPipeline::Initialize() {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glViewport(0,0,p_window->GetWindowDimentions().x,p_window->GetWindowDimentions().y);
-    glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
     glPatchParameteri(GL_PATCH_VERTICES, 4);
 
     //load and compile shaders
@@ -135,6 +133,10 @@ void GraphicsPipeline::RegisterScene(Scene& scene) {
     for (int i = 0; i < scene.splines.size(); i++) {
         RegisterSpline(scene.splines[i]);
     }
+}
+
+void GraphicsPipeline::DrawSplineGizmos(Spline spline) {
+
 }
 
 void GraphicsPipeline::Rendermesh(Mesh mesh, Camera camera, glm::mat4 view, glm::mat4 projection) {
@@ -224,7 +226,7 @@ void GraphicsPipeline::RenderScene(Scene scene) {
         Rendermesh(scene.meshes[i], scene.camera, view, projection);
     }
 
-    //render splines
+    //render splinesb nm
     for (int i = 0; i < scene.splines.size(); i++) {
         RenderSpline(scene.splines[i], scene.camera, view, projection);
     }

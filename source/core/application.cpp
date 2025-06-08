@@ -38,8 +38,8 @@ void Application::Run() {
         glm::vec3 cameraUp = glm::normalize(glm::cross(cameraForward, cameraRight));
         if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_3] == GLFW_PRESS) {
             if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT) {
-                scene.camera.position += (cameraRight * Input::mouseDelta.x + cameraUp * Input::mouseDelta.y) / 200.0f;
-                scene.camera.target += (cameraRight * Input::mouseDelta.x + cameraUp * Input::mouseDelta.y) / 200.0f;
+                scene.camera.position += ((cameraRight * Input::mouseDelta.x + cameraUp * Input::mouseDelta.y) / 200.0f) * (float)pow(scene.camera.zoomFactor, 5);
+                scene.camera.target += ((cameraRight * Input::mouseDelta.x + cameraUp * Input::mouseDelta.y) / 200.0f) * (float)pow(scene.camera.zoomFactor,5);
             }
             else if (Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_REPEAT) {
                 float distanceMagnifier = pow(glm::distance(scene.camera.target, scene.camera.position), 1.7f);

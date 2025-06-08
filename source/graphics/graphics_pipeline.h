@@ -54,6 +54,11 @@ public:
     void RegisterScene(Scene& scene);
 
     void Initialize();
+
+    //immediate-mode drawing
+    void DrawSplineGizmos(Spline spline);
+
+    //rendering
     void Rendermesh(Mesh mesh, Camera camera, glm::mat4 view, glm::mat4 projection);
     void RenderSpline(Spline spline, Camera camera, glm::mat4 view, glm::mat4 projection);
     void RenderScene(Scene scene);
