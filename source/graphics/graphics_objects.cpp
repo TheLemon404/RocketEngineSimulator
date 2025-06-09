@@ -287,3 +287,50 @@ void Mesh::UpdateBuffers() {
     vao->Unbind();
 }
 
+void SelectableSpace::CheckSelection(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution) {
+    //convert world space to screen space
+    glm::vec4 worldPosition = glm::vec4(position.x, position.y, position.z, 1.0f);
+    glm::vec4 viewPosition = view * worldPosition;
+    glm::vec4 clipPosition = projection * viewPosition;
+    glm::vec3 ndcPos = glm::vec3(clipPosition.x / clipPosition.w, clipPosition.y / clipPosition.w, clipPosition.z / clipPosition.w);
+
+    glm::vec2 screenCoords = glm::ivec2((ndcPos.x + 1.0f) * 0.5f * screenResolution.x, (1.0f - ndcPos.y) * 0.5f * screenResolution.y);
+
+    if (glm::distance(screenCoords, mousePosition) < radius * 100.0f) {
+        selected = true;
+    }
+    else {
+        selected = false;
+    }
+}
+
+std::vector<float> Spline::ExtractPositions() {
+    return std::vector<float>{
+        p0.position.x, p0.position.y, p0.position.z, p1.position.x, p1.position.y, p1.position.z, p2.position.x,
+        p2.position.y, p2.position.z, p3.position.x, p3.position.y, p3.position.z
+    };
+}
+
+SelectableSpace* Spline::GetSelectedGizmo(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution) {
+    p0.CheckSelection(mousePosition, view, projection, screenResolution);
+    p1.CheckSelection(mousePosition, view, projection, screenResolution);
+    p2.CheckSelection(mousePosition, view, projection, screenResolution);
+    p3.CheckSelection(mousePosition, view, projection, screenResolution);
+
+    if (p0.selected) {
+        return &p0;
+    }
+    else if (p1.selected) {
+        return &p1;
+    }
+    else if (p2.selected) {
+        return &p2;
+    }
+    else if (p3.selected) {
+        return &p3;
+    }
+
+    return nullptr;
+}
+
+

@@ -18,8 +18,6 @@
 
 #endif //GRAPHICS_OBJECTS_H
 
-struct Spline;
-
 enum MeshRenderMode {
     NORMAL,
     UNLIT
@@ -42,12 +40,6 @@ struct Camera {
     glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
     void RotateAround(float angle, glm::vec3 axis, glm::vec3 originPoint);
-};
-
-struct Scene {
-    std::vector<Mesh> meshes;
-    std::vector<Spline> splines;
-    Camera camera;
 };
 
 struct ShaderObject {
@@ -102,6 +94,30 @@ struct BufferObject {
     void Unbind();
 };
 
+struct SelectableSpace {
+    glm::vec3 position;
+    float radius = 0.2f;
+    bool selected = false;
+
+    SelectableSpace(glm::vec3 position) : position(position) {};
+
+    void CheckSelection(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
+};
+
+struct Spline {
+    unsigned int id = rand();
+    SelectableSpace p0, p1, p2, p3;
+
+    Spline(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3) : p0(p0), p1(p1), p2(p2), p3(p3) {}
+
+    std::vector<float> ExtractPositions();
+
+    SelectableSpace* GetSelectedGizmo(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
+
+    VertexArrayObject* vao;
+    BufferObject<float>* positionsBuffer;
+};
+
 struct TextureObject {
     unsigned int id;
     unsigned int width, height;
@@ -140,14 +156,11 @@ struct Mesh {
     BufferObject<int>* indicesBuffer;
 };
 
-struct Spline {
-    unsigned int id = rand();
-    glm::vec3 p0, p1, p2, p3;
+struct Scene {
+    std::vector<Mesh> meshes;
+    std::vector<Spline> splines;
+    Camera camera;
 
-    Spline(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3) : p0(p0), p1(p1), p2(p2), p3(p3) {}
-
-    std::vector<float> ExtractPositions();
-
-    VertexArrayObject* vao;
-    BufferObject<float>* positionsBuffer;
+    Mesh* GetMeshFromID(unsigned int id) { for (int i = 0; i < meshes.size(); i++) if (meshes[i].id == id) return &meshes[i]; };
+    Spline* GetSplineFromID(unsigned int id) { for (int i = 0; i < splines.size(); i++) if (splines[i].id == id) return &splines[i]; };
 };

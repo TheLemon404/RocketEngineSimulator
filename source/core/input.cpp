@@ -29,7 +29,45 @@ void Input::GLFWSetCursorPosCallback(GLFWwindow *window, double xpos, double ypo
     mousePosition.y = static_cast<float>(ypos);
 }
 
+bool Input::IsMouseButtonJustPressed(int button) {
+    if (mouseButtonStates[button] == GLFW_PRESS && m_prevMouseButtonStates[button] == GLFW_RELEASE) {
+        return true;
+    }
+
+    return false;
+}
+
+bool Input::IsMouseButtonJustReleased(int button) {
+    if (mouseButtonStates[button] == GLFW_RELEASE && m_prevMouseButtonStates[button == GLFW_PRESS]) {
+        return true;
+    }
+
+    return false;
+}
+
+bool Input::IsKeyJustPressed(int key) {
+    if (keyStates[key] == GLFW_PRESS && m_prevKeyStates[key] == GLFW_RELEASE) {
+        return true;
+    }
+
+    return false;
+}
+
+bool Input::IsKeyJustReleased(int key) {
+    if (keyStates[key] == GLFW_RELEASE && m_prevKeyStates[key] == GLFW_PRESS) {
+        return true;
+    }
+
+    return false;
+}
+
 void Input::Refresh() {
+    for (auto keyState : keyStates) {
+        m_prevKeyStates[keyState.first] = keyState.second;
+    }
+    for (auto mouseButtonState : mouseButtonStates) {
+        m_prevMouseButtonStates[mouseButtonState.first] = mouseButtonState.second;
+    }
     mouseScrollVector = glm::vec2(0, 0);
     mouseDelta = glm::vec2(0, 0);
 }

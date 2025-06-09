@@ -14,6 +14,9 @@
 #endif //INPUT_H
 
 class Input {
+private:
+    static inline std::map<int, int> m_prevKeyStates;
+    static inline std::map<int, int> m_prevMouseButtonStates;
 public:
     static inline glm::vec2 mouseScrollVector;
     static inline glm::vec2 mousePosition;
@@ -28,6 +31,11 @@ public:
     static void GLFWSetCursorPosCallback(GLFWwindow* window, double xpos, double ypos);
     static void GLFWMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
     static void GLFWScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+
+    static bool IsMouseButtonJustPressed(int button);
+    static bool IsMouseButtonJustReleased(int button);
+    static bool IsKeyJustPressed(int key);
+    static bool IsKeyJustReleased(int key);
 
     static void Refresh();
 };

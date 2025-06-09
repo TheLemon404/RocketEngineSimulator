@@ -5,6 +5,7 @@
 #include "graphics_pipeline.h"
 
 #include "imoguizmo.hpp"
+#include "../core/input.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "glm/ext/matrix_clip_space.hpp"
@@ -150,8 +151,8 @@ void GraphicsPipeline::RegisterScene(Scene& scene) {
 }
 
 void GraphicsPipeline::DrawDebugSphere(glm::vec3 center, float radius, glm::vec3 color, Camera camera) {
-    int rings = 32;
-    int sectors = 64;
+    const int rings = 32;
+    const int sectors = 64;
 
     //calculate matricies
     glm::mat4 view;
@@ -167,7 +168,7 @@ void GraphicsPipeline::DrawDebugSphere(glm::vec3 center, float radius, glm::vec3
         projection = glm::ortho(-orthoWidth, orthoWidth, -orthoHeight, orthoHeight, 0.001f, 10000.0f);
     }
 
-        glMatrixMode(GL_PROJECTION);
+    glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadMatrixf(glm::value_ptr(projection));
 
@@ -213,10 +214,10 @@ void GraphicsPipeline::DrawDebugSphere(glm::vec3 center, float radius, glm::vec3
 }
 
 void GraphicsPipeline::DrawSplineGizmos(Spline spline, Camera camera) {
-    DrawDebugSphere(spline.p0, 0.25f, glm::vec3(1.0f, 0.0, 0.0), camera);
-    DrawDebugSphere(spline.p1, 0.2f, glm::vec3(1.0f, 1.0, 0.0), camera);
-    DrawDebugSphere(spline.p2, 0.2f, glm::vec3(1.0f, 1.0, 0.0), camera);
-    DrawDebugSphere(spline.p3, 0.25f, glm::vec3(1.0f, 0.0, 0.0), camera);
+    DrawDebugSphere(spline.p0.position, spline.p0.radius, spline.p0.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 0.0, 0.0), camera);
+    DrawDebugSphere(spline.p1.position, spline.p1.radius, spline.p1.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 1.0, 0.0), camera);
+    DrawDebugSphere(spline.p2.position, spline.p2.radius, spline.p2.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 1.0, 0.0), camera);
+    DrawDebugSphere(spline.p3.position, spline.p3.radius, spline.p3.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 0.0, 0.0), camera);
 }
 
 
@@ -313,9 +314,21 @@ void GraphicsPipeline::RenderScene(Scene scene) {
     }
 
     //render splines and gizmos
+    SelectableSpace* currectSelectedSpace = nullptr;
     for (int i = 0; i < scene.splines.size(); i++) {
         RenderSpline(scene.splines[i], scene.camera, view, projection);
+
+        //check for spline gizmo selections
+        if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS) {
+            currectSelectedSpace = scene.splines[i].GetSelectedGizmo(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
+        }
+
+        //draw gizmos
         DrawSplineGizmos(scene.splines[i], scene.camera);
+    }
+
+    if (currectSelectedSpace != nullptr) {
+        std::cout << "selected node" << std::endl;
     }
 }
 
