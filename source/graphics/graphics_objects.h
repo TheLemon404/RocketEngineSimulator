@@ -111,8 +111,9 @@ struct Spline {
     Spline(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3) : p0(p0), p1(p1), p2(p2), p3(p3) {}
 
     std::vector<float> ExtractPositions();
-
     SelectableSpace* GetSelectedGizmo(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
+
+    void UpdatePositionsBuffer();
 
     VertexArrayObject* vao;
     BufferObject<float>* positionsBuffer;

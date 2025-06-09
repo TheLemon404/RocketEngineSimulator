@@ -150,23 +150,13 @@ void GraphicsPipeline::RegisterScene(Scene& scene) {
     }
 }
 
-void GraphicsPipeline::DrawDebugSphere(glm::vec3 center, float radius, glm::vec3 color, Camera camera) {
+void GraphicsPipeline::DrawDebugSphere3D(glm::vec3 center, float radius, glm::vec3 color, Camera camera) {
     const int rings = 32;
     const int sectors = 64;
 
     //calculate matricies
-    glm::mat4 view;
-    view = glm::lookAt(camera.position, camera.target, camera.up);
-
-    glm::mat4 projection;
-    if (camera.projectionMode == PERSPECTIVE) {
-        projection = glm::perspective(glm::radians(camera.fov), ((float)p_window->GetWindowDimentions().x / (float)p_window->GetWindowDimentions().y), 0.001f, 10000.0f);
-    }
-    else if (camera.projectionMode == ORTHOGRAPHIC) {
-        float orthoWidth = ((float)p_window->GetWindowDimentions().x / 1000) * camera.zoomFactor;
-        float orthoHeight = ((float)p_window->GetWindowDimentions().y / 1000) * camera.zoomFactor;
-        projection = glm::ortho(-orthoWidth, orthoWidth, -orthoHeight, orthoHeight, 0.001f, 10000.0f);
-    }
+    glm::mat4 view = glm::lookAt(camera.position, camera.target, camera.up);
+    glm::mat4 projection = glm::perspective(glm::radians(camera.fov), ((float)p_window->GetWindowDimentions().x / (float)p_window->GetWindowDimentions().y), 0.001f, 10000.0f);
 
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -213,15 +203,49 @@ void GraphicsPipeline::DrawDebugSphere(glm::vec3 center, float radius, glm::vec3
     glMatrixMode(GL_MODELVIEW);
 }
 
-void GraphicsPipeline::DrawSplineGizmos(Spline spline, Camera camera) {
-    DrawDebugSphere(spline.p0.position, spline.p0.radius, spline.p0.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 0.0, 0.0), camera);
-    DrawDebugSphere(spline.p1.position, spline.p1.radius, spline.p1.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 1.0, 0.0), camera);
-    DrawDebugSphere(spline.p2.position, spline.p2.radius, spline.p2.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 1.0, 0.0), camera);
-    DrawDebugSphere(spline.p3.position, spline.p3.radius, spline.p3.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 0.0, 0.0), camera);
+void GraphicsPipeline::DrawDebugCircle2D(glm::vec2 center, float radius, glm::vec3 color) {
+    glColor3f(color.r, color.g, color.b);
+
+    glPushMatrix();
+    glTranslatef(center.x, center.y, 0);
+
+    // Draw 3 circles for X, Y, Z planes
+
+    // XY plane circle
+    glBegin(GL_LINE_LOOP);
+    for (int i = 0; i < 32; i++) {
+        float angle = 2.0f * M_PI * i / 32.0f;
+        glVertex3f(cos(angle) * radius, sin(angle) * radius, 0.0f);
+    }
+    glEnd();
+
+    // XZ plane circle
+    glBegin(GL_LINE_LOOP);
+    for (int i = 0; i < 32; i++) {
+        float angle = 2.0f * M_PI * i / 32.0f;
+        glVertex3f(cos(angle) * radius, 0.0f, sin(angle) * radius);
+    }
+    glEnd();
+
+    // YZ plane circle
+    glBegin(GL_LINE_LOOP);
+    for (int i = 0; i < 32; i++) {
+        float angle = 2.0f * M_PI * i / 32.0f;
+        glVertex3f(0.0f, cos(angle) * radius, sin(angle) * radius);
+    }
+    glEnd();
+
+    glPopMatrix();
 }
 
+void GraphicsPipeline::DrawSplineGizmos(Spline spline, Camera camera) {
+    DrawDebugSphere3D(spline.p0.position, spline.p0.radius, spline.p0.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 0.0, 0.0), camera);
+    DrawDebugSphere3D(spline.p1.position, spline.p1.radius, spline.p1.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 1.0, 0.0), camera);
+    DrawDebugSphere3D(spline.p2.position, spline.p2.radius, spline.p2.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 1.0, 0.0), camera);
+    DrawDebugSphere3D(spline.p3.position, spline.p3.radius, spline.p3.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 0.0, 0.0), camera);
+}
 
-void GraphicsPipeline::Rendermesh(Mesh mesh, Camera camera, glm::mat4 view, glm::mat4 projection) {
+void GraphicsPipeline::Rendermesh(Mesh& mesh, glm::mat4 view, glm::mat4 projection) {
     //draw
     switch (mesh.renderMode) {
         case NORMAL:
@@ -253,7 +277,7 @@ void GraphicsPipeline::Rendermesh(Mesh mesh, Camera camera, glm::mat4 view, glm:
     glUseProgram(0);
 }
 
-void GraphicsPipeline::RenderSpline(Spline spline, Camera camera, glm::mat4 view, glm::mat4 projection) {
+void GraphicsPipeline::RenderSpline(Spline& spline, glm::mat4 view, glm::mat4 projection) {
     //draw curves (for debug)
     m_splineProgram->Use();
     m_splineProgram->UploadUniformMat4("view", view);
@@ -268,24 +292,47 @@ void GraphicsPipeline::RenderSpline(Spline spline, Camera camera, glm::mat4 view
     glUseProgram(0);
 }
 
-void GraphicsPipeline::RenderScene(Scene scene) {
+void GraphicsPipeline::RenderScene(Scene& scene) {
     //set opengl viewport and clear state
     glViewport(0,0,p_window->GetWindowDimentions().x,p_window->GetWindowDimentions().y);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     //calculate matricies
-    glm::mat4 view;
-    view = glm::lookAt(scene.camera.position, scene.camera.target, scene.camera.up);
+    glm::mat4 view = glm::lookAt(scene.camera.position, scene.camera.target, scene.camera.up);
+    glm::mat4 projection = glm::perspective(glm::radians(scene.camera.fov), ((float)p_window->GetWindowDimentions().x / (float)p_window->GetWindowDimentions().y), 0.001f, 10000.0f);
 
-    glm::mat4 projection;
-    if (scene.camera.projectionMode == PERSPECTIVE) {
-        projection = glm::perspective(glm::radians(scene.camera.fov), ((float)p_window->GetWindowDimentions().x / (float)p_window->GetWindowDimentions().y), 0.001f, 10000.0f);
+
+    //calculate world space mouse position for object moving
+    glm::vec2 ndc = glm::vec2((2.0f * Input::mousePosition.x) / p_window->GetWindowDimentions().x - 1.0f, 1.0f - (2.0 * Input::mousePosition.y) / p_window->GetWindowDimentions().y);
+    glm::mat4 inverseViewProjectionMatrix = glm::inverse(projection * view);
+    glm::vec4 nearClip = {ndc.x, ndc.y, -1.0f, 1.0f};
+    glm::vec4 farClip = {ndc.x, ndc.y, 1.0f, 1.0f};
+    glm::vec4 nearWorld = inverseViewProjectionMatrix * nearClip;
+    glm::vec4 farWorld = inverseViewProjectionMatrix * farClip;
+    glm::vec3 near = glm::vec3(nearWorld) / nearWorld.w;
+    glm::vec3 far = glm::vec3(farWorld) / farWorld.w;
+    glm::vec3 rayDirection = far - near;
+    glm::vec3 worldPos;
+    if (rayDirection.y != 0.0f) {
+        float t = -near.y / rayDirection.y;
+        worldPos = near + t * rayDirection;
     }
-    else if (scene.camera.projectionMode == ORTHOGRAPHIC) {
-        float orthoWidth = ((float)p_window->GetWindowDimentions().x / 1000) * scene.camera.zoomFactor;
-        float orthoHeight = ((float)p_window->GetWindowDimentions().y / 1000) * scene.camera.zoomFactor;
-        projection = glm::ortho(-orthoWidth, orthoWidth, -orthoHeight, orthoHeight, 0.001f, 10000.0f);
+
+    //manage gizmo selection and spline manipulation
+    if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS && m_currectSelectedSpace == nullptr) {
+        for (int i = 0; i < scene.splines.size(); i++) {
+            m_currectSelectedSpace = scene.splines[i].GetSelectedGizmo(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
+            m_currentSelectedSplineIndex = i;
+            if(m_currectSelectedSpace != nullptr) return;
+        }
+    }
+    if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_RELEASE) {
+        m_currectSelectedSpace = nullptr;
+    }
+    if (m_currectSelectedSpace != nullptr) {
+        m_currectSelectedSpace->position = worldPos;
+        scene.splines[m_currentSelectedSplineIndex].UpdatePositionsBuffer();
     }
 
     glDisable(GL_DEPTH_TEST);
@@ -308,32 +355,20 @@ void GraphicsPipeline::RenderScene(Scene scene) {
 
     glEnable(GL_DEPTH_TEST);
 
-    //render meshs in scene
+    //render meshes in scene
     for (int i = 0; i < scene.meshes.size(); i++) {
-        Rendermesh(scene.meshes[i], scene.camera, view, projection);
+        Rendermesh(scene.meshes[i], view, projection);
     }
 
-    //render splines and gizmos
-    SelectableSpace* currectSelectedSpace = nullptr;
+    //render splines in scene
     for (int i = 0; i < scene.splines.size(); i++) {
-        RenderSpline(scene.splines[i], scene.camera, view, projection);
-
-        //check for spline gizmo selections
-        if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS) {
-            currectSelectedSpace = scene.splines[i].GetSelectedGizmo(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
-        }
-
-        //draw gizmos
+        RenderSpline(scene.splines[i], view, projection);
         DrawSplineGizmos(scene.splines[i], scene.camera);
-    }
-
-    if (currectSelectedSpace != nullptr) {
-        std::cout << "selected node" << std::endl;
     }
 }
 
 
-void GraphicsPipeline::PresentScene(Scene scene) {
+void GraphicsPipeline::PresentScene(Scene& scene) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -341,7 +376,7 @@ void GraphicsPipeline::PresentScene(Scene scene) {
     //orientation guizmo
     glm::mat4 view;
     view = glm::lookAt(scene.camera.position, scene.camera.target, scene.camera.up);
-    ImOGuizmo::SetRect(p_window->GetWindowDimentions().x - 120, 60, 100.0f);
+    ImOGuizmo::SetRect(p_window->GetWindowDimentions().x - 150, 60, 100.0f);
     ImOGuizmo::BeginFrame();
     glm::mat4 projection = glm::perspective(glm::radians(scene.camera.fov), (float)p_window->GetWindowDimentions().y/p_window->GetWindowDimentions().x, 0.001f, 10000.0f);
     if (!ImOGuizmo::DrawGizmo((float*)&view, (float*)&projection)){

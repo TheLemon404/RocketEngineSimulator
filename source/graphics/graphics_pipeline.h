@@ -46,6 +46,11 @@ class GraphicsPipeline {
     BufferObject<float>* m_quadPositions;
     BufferObject<int>* m_quadIndices;
 
+    //for selecting gizmos
+    SelectableSpace* m_currectSelectedSpace = nullptr;
+    int m_currentSelectedSplineIndex = 0;
+
+
 public:
     GraphicsPipeline(Window* window);
 
@@ -56,14 +61,15 @@ public:
     void Initialize();
 
     //immediate-mode drawing
-    void DrawDebugSphere(glm::vec3 center, float radius, glm::vec3 color, Camera camera);
+    void DrawDebugSphere3D(glm::vec3 center, float radius, glm::vec3 color, Camera camera);
+    void DrawDebugCircle2D(glm::vec2 center, float radius, glm::vec3 color);
     void DrawSplineGizmos(Spline spline, Camera camera);
 
     //rendering
-    void Rendermesh(Mesh mesh, Camera camera, glm::mat4 view, glm::mat4 projection);
-    void RenderSpline(Spline spline, Camera camera, glm::mat4 view, glm::mat4 projection);
-    void RenderScene(Scene scene);
-    void PresentScene(Scene scene);
+    void Rendermesh(Mesh& mesh, glm::mat4 view, glm::mat4 projection);
+    void RenderSpline(Spline& spline, glm::mat4 view, glm::mat4 projection);
+    void RenderScene(Scene& scene);
+    void PresentScene(Scene& scene);
 
     void CleanUp();
 };

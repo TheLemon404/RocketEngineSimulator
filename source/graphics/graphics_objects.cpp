@@ -162,12 +162,11 @@ template<typename T> BufferObject<T>::~BufferObject() {
 
 template<typename T> void BufferObject<T>::Upload(std::vector<T> data) {
     Bind();
-
     if (std::is_same<T, float>::value) {
-        glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), data.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), data.data(), GL_DYNAMIC_DRAW);
     }
     else if (std::is_same<T, int>::value) {
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.size() * sizeof(int), data.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.size() * sizeof(int), data.data(), GL_DYNAMIC_DRAW);
     }
 }
 
@@ -293,7 +292,6 @@ void SelectableSpace::CheckSelection(glm::vec2 mousePosition, glm::mat4 view, gl
     glm::vec4 viewPosition = view * worldPosition;
     glm::vec4 clipPosition = projection * viewPosition;
     glm::vec3 ndcPos = glm::vec3(clipPosition.x / clipPosition.w, clipPosition.y / clipPosition.w, clipPosition.z / clipPosition.w);
-
     glm::vec2 screenCoords = glm::ivec2((ndcPos.x + 1.0f) * 0.5f * screenResolution.x, (1.0f - ndcPos.y) * 0.5f * screenResolution.y);
 
     if (glm::distance(screenCoords, mousePosition) < radius * 100.0f) {
@@ -332,5 +330,10 @@ SelectableSpace* Spline::GetSelectedGizmo(glm::vec2 mousePosition, glm::mat4 vie
 
     return nullptr;
 }
+
+void Spline::UpdatePositionsBuffer() {
+    positionsBuffer->Upload(ExtractPositions());
+}
+
 
 
