@@ -222,7 +222,6 @@ void TextureObject::SetData(void *data) {
     glGenerateMipmap(GL_TEXTURE_2D);
 }
 
-
 void TextureObject::Bind() {
     glBindTexture(GL_TEXTURE_2D, id);
 }
@@ -286,6 +285,22 @@ void Mesh::UpdateBuffers() {
     vao->Unbind();
 }
 
+void SelectableSpace::LinkTo(SelectableSpace *other) {
+    ClearLinks();
+    if (other != nullptr) {
+        other->ClearLinks();
+        this->link = other;
+        other->link = this;
+    }
+}
+
+void SelectableSpace::ClearLinks() {
+    if (link != nullptr) {
+        link->link = nullptr;
+        link = nullptr;
+    }
+}
+
 void SelectableSpace::CheckSelection(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution) {
     //convert world space to screen space
     glm::vec4 worldPosition = glm::vec4(position.x, position.y, position.z, 1.0f);
@@ -302,36 +317,36 @@ void SelectableSpace::CheckSelection(glm::vec2 mousePosition, glm::mat4 view, gl
     }
 }
 
-std::vector<float> Spline::ExtractPositions() {
-    return std::vector<float>{
-        p0.position.x, p0.position.y, p0.position.z, p1.position.x, p1.position.y, p1.position.z, p2.position.x,
-        p2.position.y, p2.position.z, p3.position.x, p3.position.y, p3.position.z
-    };
+std::vector<float> LinePath::ExtractPositions() {
+    std::vector<float> result;
+    for (int i = 0; i < controls.size(); i++) {
+        result.push_back(controls[i].position.x);
+        result.push_back(controls[i].position.y);
+        result.push_back(controls[i].position.z);
+    }
+    return result;
 }
 
-SelectableSpace* Spline::GetSelectedGizmo(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution) {
-    p0.CheckSelection(mousePosition, view, projection, screenResolution);
-    p1.CheckSelection(mousePosition, view, projection, screenResolution);
-    p2.CheckSelection(mousePosition, view, projection, screenResolution);
-    p3.CheckSelection(mousePosition, view, projection, screenResolution);
-
-    if (p0.selected) {
-        return &p0;
+SelectableSpace* LinePath::GetSelectedGizmo(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution) {
+    for (int i = 0; i < controls.size(); i++) {
+        controls[i].CheckSelection(mousePosition, view, projection, screenResolution);
     }
-    else if (p1.selected) {
-        return &p1;
-    }
-    else if (p2.selected) {
-        return &p2;
-    }
-    else if (p3.selected) {
-        return &p3;
+    for (int i = 0; i < controls.size(); i++) {
+        if (controls[i].selected) {
+            return &controls[i];
+        }
     }
 
     return nullptr;
 }
 
-void Spline::UpdatePositionsBuffer() {
+void LinePath::Extrude(glm::vec3 to) {
+    SelectableSpace s = {to};
+    controls.push_back(s);
+    UpdatePositionsBuffer();
+}
+
+void LinePath::UpdatePositionsBuffer() {
     positionsBuffer->Upload(ExtractPositions());
 }
 

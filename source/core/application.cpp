@@ -24,7 +24,10 @@ void Application::Initialize() {
 
     scene.meshes.push_back(Mesh::LoadmeshFromOBJ("resources/meshes/monkey_smooth.obj"));
     scene.meshes[0].position.x = 2.0f;
-    scene.splines.push_back({glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(-1.0f, 0.0f, -0.5f), glm::vec3(1.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 1.0f)});
+    scene.linePaths.push_back({{
+            glm::vec3(0.0f, 0.0f, -1.0f),
+            glm::vec3(0.0f, 0.0f, 1.0f)
+        }});
 
     m_graphicsPipeline->RegisterScene(scene);
 }
@@ -61,7 +64,7 @@ void Application::Run() {
 
         //drawing
         m_graphicsPipeline->RenderScene(scene);
-        m_graphicsPipeline->PresentScene(scene);
+        m_graphicsPipeline->DrawUI(scene);
 
         //reset state
         Input::Refresh();

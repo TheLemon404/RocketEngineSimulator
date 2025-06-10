@@ -47,18 +47,18 @@ void GraphicsPipeline::RegisterMesh(Mesh& mesh) {
     std::cout << "mesh: " << mesh.id << " has been registered" << std::endl;
 }
 
-void GraphicsPipeline::RegisterSpline(Spline &spline) {
-    spline.vao = new VertexArrayObject();
-    spline.vao->Bind();
+void GraphicsPipeline::RegisterLinePath(LinePath &linePath) {
+    linePath.vao = new VertexArrayObject();
+    linePath.vao->Bind();
 
     //vertex positions
-    spline.positionsBuffer = new BufferObject<float>();
-    spline.positionsBuffer->Upload(spline.ExtractPositions());
-    spline.vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
+    linePath.positionsBuffer = new BufferObject<float>();
+    linePath.positionsBuffer->Upload(linePath.ExtractPositions());
+    linePath.vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
 
-    spline.vao->Unbind();
+    linePath.vao->Unbind();
 
-    std::cout << "spline: " << spline.id << " has been registered" << std::endl;
+    std::cout << "linePath: " << linePath.id << " has been registered" << std::endl;
 }
 
 void GraphicsPipeline::Initialize() {
@@ -103,16 +103,12 @@ void GraphicsPipeline::Initialize() {
     m_checkersProgram = new ShaderProgramObject();
     m_checkersProgram->Compile(m_screenSpaceVertexShader, m_checkersFragmentShader);
 
-    m_splineVertexShader = new ShaderObject(GL_VERTEX_SHADER);
-    m_splineVertexShader->Load("resources/shaders/spline.vert");
-    m_splineFragmentShader = new ShaderObject(GL_FRAGMENT_SHADER);
-    m_splineFragmentShader->Load("resources/shaders/spline.frag");
-    m_splineTesselationControlShader = new ShaderObject(GL_TESS_CONTROL_SHADER);
-    m_splineTesselationControlShader->Load("resources/shaders/spline.tcs");
-    m_splineTesselationEvaluationShader = new ShaderObject(GL_TESS_EVALUATION_SHADER);
-    m_splineTesselationEvaluationShader->Load("resources/shaders/spline.tes");
-    m_splineProgram = new ShaderProgramObject();
-    m_splineProgram->CompileTesselation(m_splineVertexShader, m_splineTesselationControlShader, m_splineTesselationEvaluationShader, m_splineFragmentShader);
+    m_linePathVertexShader = new ShaderObject(GL_VERTEX_SHADER);
+    m_linePathVertexShader->Load("resources/shaders/linePath.vert");
+    m_linePathFragmentShader = new ShaderObject(GL_FRAGMENT_SHADER);
+    m_linePathFragmentShader->Load("resources/shaders/linePath.frag");
+    m_linePathProgram = new ShaderProgramObject();
+    m_linePathProgram->Compile(m_linePathVertexShader, m_linePathFragmentShader);
 
     //create fullscreen quad
     m_quadVAO = new VertexArrayObject();
@@ -145,9 +141,19 @@ void GraphicsPipeline::RegisterScene(Scene& scene) {
     for (int i = 0; i < scene.meshes.size(); i++) {
         RegisterMesh(scene.meshes[i]);
     }
-    for (int i = 0; i < scene.splines.size(); i++) {
-        RegisterSpline(scene.splines[i]);
+    for (int i = 0; i < scene.linePaths.size(); i++) {
+        RegisterLinePath(scene.linePaths[i]);
     }
+}
+
+void GraphicsPipeline::ClearSelection(Scene& scene) {
+    for (int i = 0; i < scene.linePaths.size(); i++) {
+        for (int j = 0; j < scene.linePaths[i].controls.size(); j++) {
+            scene.linePaths[i].controls[j].selected = false;
+        }
+    }
+
+    m_currentSelectedSpace = nullptr;
 }
 
 void GraphicsPipeline::DrawDebugSphere3D(glm::vec3 center, float radius, glm::vec3 color, Camera camera) {
@@ -238,11 +244,10 @@ void GraphicsPipeline::DrawDebugCircle2D(glm::vec2 center, float radius, glm::ve
     glPopMatrix();
 }
 
-void GraphicsPipeline::DrawSplineGizmos(Spline spline, Camera camera) {
-    DrawDebugSphere3D(spline.p0.position, spline.p0.radius, spline.p0.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 0.0, 0.0), camera);
-    DrawDebugSphere3D(spline.p1.position, spline.p1.radius, spline.p1.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 1.0, 0.0), camera);
-    DrawDebugSphere3D(spline.p2.position, spline.p2.radius, spline.p2.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 1.0, 0.0), camera);
-    DrawDebugSphere3D(spline.p3.position, spline.p3.radius, spline.p3.selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 0.0, 0.0), camera);
+void GraphicsPipeline::DrawLinePathGizmos(LinePath linePath, Camera camera) {
+    for (int i = 0; i < linePath.controls.size(); i++) {
+        DrawDebugSphere3D(linePath.controls[i].position, linePath.controls[i].radius, linePath.controls[i].selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 0.0, 0.0), camera);
+    }
 }
 
 void GraphicsPipeline::Rendermesh(Mesh& mesh, glm::mat4 view, glm::mat4 projection) {
@@ -277,18 +282,16 @@ void GraphicsPipeline::Rendermesh(Mesh& mesh, glm::mat4 view, glm::mat4 projecti
     glUseProgram(0);
 }
 
-void GraphicsPipeline::RenderSpline(Spline& spline, glm::mat4 view, glm::mat4 projection) {
+void GraphicsPipeline::RenderLinePath(LinePath& linePath, glm::mat4 view, glm::mat4 projection) {
     //draw curves (for debug)
-    m_splineProgram->Use();
-    m_splineProgram->UploadUniformMat4("view", view);
-    m_splineProgram->UploadUniformMat4("projection", projection);
-    m_splineProgram->UploadUniformVec4("tint", glm::vec4(1.0f));
-    m_splineProgram->UploadUniformMat4("transform", glm::identity<glm::mat4>());
-    m_splineProgram->UploadUniformFloat("segmentCount", 40);
-    m_splineProgram->UploadUniformFloat("stripCount", 1);
-    spline.vao->Bind();
-    glDrawArrays(GL_PATCHES, 0, 4);
-    spline.vao->Unbind();
+    m_linePathProgram->Use();
+    m_linePathProgram->UploadUniformMat4("view", view);
+    m_linePathProgram->UploadUniformMat4("projection", projection);
+    m_linePathProgram->UploadUniformVec4("tint", glm::vec4(1.0f));
+    m_linePathProgram->UploadUniformMat4("transform", glm::identity<glm::mat4>());
+    linePath.vao->Bind();
+    glDrawArrays(GL_LINE_STRIP, 0, linePath.controls.size());
+    linePath.vao->Unbind();
     glUseProgram(0);
 }
 
@@ -319,20 +322,32 @@ void GraphicsPipeline::RenderScene(Scene& scene) {
         worldPos = near + t * rayDirection;
     }
 
-    //manage gizmo selection and spline manipulation
-    if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS && m_currectSelectedSpace == nullptr) {
-        for (int i = 0; i < scene.splines.size(); i++) {
-            m_currectSelectedSpace = scene.splines[i].GetSelectedGizmo(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
-            m_currentSelectedSplineIndex = i;
-            if(m_currectSelectedSpace != nullptr) return;
+    //manage gizmo selection and linePath manipulation
+    if (Input::IsMouseButtonJustPressed(GLFW_MOUSE_BUTTON_1)) {
+        ClearSelection(scene);
+        for (int i = 0; i < scene.linePaths.size(); i++) {
+            m_currentSelectedSpace = scene.linePaths[i].GetSelectedGizmo(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
+            if(m_currentSelectedSpace != nullptr) {
+                m_currentSelectedLinePathIndex = i;
+                return;
+            }
         }
     }
-    if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_RELEASE) {
-        m_currectSelectedSpace = nullptr;
+
+    if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS && m_currentSelectedSpace != nullptr) {
+        m_currentSelectedSpace->position = worldPos;
+        if (m_currentSelectedSpace->link != nullptr) {
+            m_currentSelectedSpace->link->position = m_currentSelectedSpace->position;
+        }
+        scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
+        if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
+        if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
     }
-    if (m_currectSelectedSpace != nullptr) {
-        m_currectSelectedSpace->position = worldPos;
-        scene.splines[m_currentSelectedSplineIndex].UpdatePositionsBuffer();
+
+    if (Input::IsKeyJustPressed(GLFW_KEY_E) && m_currentSelectedSpace != nullptr) {
+        scene.linePaths[m_currentSelectedLinePathIndex].Extrude(worldPos);
+        RegisterLinePath(scene.linePaths[m_currentSelectedLinePathIndex]);
+        ClearSelection(scene);
     }
 
     glDisable(GL_DEPTH_TEST);
@@ -360,15 +375,15 @@ void GraphicsPipeline::RenderScene(Scene& scene) {
         Rendermesh(scene.meshes[i], view, projection);
     }
 
-    //render splines in scene
-    for (int i = 0; i < scene.splines.size(); i++) {
-        RenderSpline(scene.splines[i], view, projection);
-        DrawSplineGizmos(scene.splines[i], scene.camera);
+    //render linePaths in scene
+    for (int i = 0; i < scene.linePaths.size(); i++) {
+        RenderLinePath(scene.linePaths[i], view, projection);
+        DrawLinePathGizmos(scene.linePaths[i], scene.camera);
     }
 }
 
 
-void GraphicsPipeline::PresentScene(Scene& scene) {
+void GraphicsPipeline::DrawUI(Scene& scene) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
@@ -394,7 +409,7 @@ void GraphicsPipeline::CleanUp() {
     delete m_gridProgram;
     delete m_quadVAO;
     delete m_normalProgram;
-    delete m_splineProgram;
+    delete m_linePathProgram;
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

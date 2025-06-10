@@ -99,20 +99,25 @@ struct SelectableSpace {
     float radius = 0.2f;
     bool selected = false;
 
+    SelectableSpace* link = nullptr;
+
     SelectableSpace(glm::vec3 position) : position(position) {};
 
+    void LinkTo(SelectableSpace* other);
+    void ClearLinks();
     void CheckSelection(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
 };
 
-struct Spline {
+struct LinePath {
     unsigned int id = rand();
-    SelectableSpace p0, p1, p2, p3;
+    std::vector<SelectableSpace> controls;
 
-    Spline(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3) : p0(p0), p1(p1), p2(p2), p3(p3) {}
+    LinePath(std::vector<SelectableSpace> controls) : controls(controls) {};
 
     std::vector<float> ExtractPositions();
     SelectableSpace* GetSelectedGizmo(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
 
+    void Extrude(glm::vec3 to);
     void UpdatePositionsBuffer();
 
     VertexArrayObject* vao;
@@ -159,9 +164,9 @@ struct Mesh {
 
 struct Scene {
     std::vector<Mesh> meshes;
-    std::vector<Spline> splines;
+    std::vector<LinePath> linePaths;
     Camera camera;
 
     Mesh* GetMeshFromID(unsigned int id) { for (int i = 0; i < meshes.size(); i++) if (meshes[i].id == id) return &meshes[i]; };
-    Spline* GetSplineFromID(unsigned int id) { for (int i = 0; i < splines.size(); i++) if (splines[i].id == id) return &splines[i]; };
+    LinePath* GetLinePathFromID(unsigned int id) { for (int i = 0; i < linePaths.size(); i++) if (linePaths[i].id == id) return &linePaths[i]; };
 };

@@ -15,6 +15,8 @@
 
 #endif //GRAPHICS_PIPELINE_H
 
+void DebugLinks(Scene& scene);
+
 class GraphicsPipeline {
     Window* p_window;
 
@@ -35,11 +37,11 @@ class GraphicsPipeline {
     ShaderObject* m_checkersFragmentShader;
     ShaderProgramObject* m_checkersProgram;
 
-    ShaderObject* m_splineVertexShader;
-    ShaderObject* m_splineFragmentShader;
-    ShaderObject* m_splineTesselationEvaluationShader;
-    ShaderObject* m_splineTesselationControlShader;
-    ShaderProgramObject* m_splineProgram;
+    ShaderObject* m_linePathVertexShader;
+    ShaderObject* m_linePathFragmentShader;
+    ShaderObject* m_linePathTesselationEvaluationShader;
+    ShaderObject* m_linePathTesselationControlShader;
+    ShaderProgramObject* m_linePathProgram;
 
     //fullscreen quad
     VertexArrayObject* m_quadVAO;
@@ -47,29 +49,32 @@ class GraphicsPipeline {
     BufferObject<int>* m_quadIndices;
 
     //for selecting gizmos
-    SelectableSpace* m_currectSelectedSpace = nullptr;
-    int m_currentSelectedSplineIndex = 0;
+    SelectableSpace* m_currentSelectedSpace = nullptr;
+    int m_currentSelectedLinePathIndex = 0;
 
 
 public:
     GraphicsPipeline(Window* window);
 
     void RegisterMesh(Mesh& mesh);
-    void RegisterSpline(Spline& spline);
+    void RegisterLinePath(LinePath& linePath);
     void RegisterScene(Scene& scene);
 
     void Initialize();
 
+    //selection
+    void ClearSelection(Scene& scene);
+
     //immediate-mode drawing
     void DrawDebugSphere3D(glm::vec3 center, float radius, glm::vec3 color, Camera camera);
     void DrawDebugCircle2D(glm::vec2 center, float radius, glm::vec3 color);
-    void DrawSplineGizmos(Spline spline, Camera camera);
+    void DrawLinePathGizmos(LinePath linePath, Camera camera);
 
     //rendering
     void Rendermesh(Mesh& mesh, glm::mat4 view, glm::mat4 projection);
-    void RenderSpline(Spline& spline, glm::mat4 view, glm::mat4 projection);
+    void RenderLinePath(LinePath& linePath, glm::mat4 view, glm::mat4 projection);
     void RenderScene(Scene& scene);
-    void PresentScene(Scene& scene);
+    void DrawUI(Scene& scene);
 
     void CleanUp();
 };
