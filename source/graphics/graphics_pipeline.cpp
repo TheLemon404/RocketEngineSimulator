@@ -152,8 +152,7 @@ void GraphicsPipeline::ClearSelection(Scene& scene) {
             scene.linePaths[i].controls[j].selected = false;
         }
     }
-
-    m_currentSelectedSpace = nullptr;
+    m_currentSelectedControlIndex = -1;
 }
 
 void GraphicsPipeline::DrawDebugSphere3D(glm::vec3 center, float radius, glm::vec3 color, Camera camera) {
@@ -246,7 +245,7 @@ void GraphicsPipeline::DrawDebugCircle2D(glm::vec2 center, float radius, glm::ve
 
 void GraphicsPipeline::DrawLinePathGizmos(LinePath linePath, Camera camera) {
     for (int i = 0; i < linePath.controls.size(); i++) {
-        DrawDebugSphere3D(linePath.controls[i].position, linePath.controls[i].radius, linePath.controls[i].selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 0.0, 0.0), camera);
+        DrawDebugSphere3D(linePath.controls[i].position, 0.2f, linePath.controls[i].selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 0.0, 0.0), camera);
     }
 }
 
@@ -290,7 +289,7 @@ void GraphicsPipeline::RenderLinePath(LinePath& linePath, glm::mat4 view, glm::m
     m_linePathProgram->UploadUniformVec4("tint", glm::vec4(1.0f));
     m_linePathProgram->UploadUniformMat4("transform", glm::identity<glm::mat4>());
     linePath.vao->Bind();
-    glDrawArrays(GL_LINE_STRIP, 0, linePath.controls.size());
+    glDrawArrays(GL_LINE_STRIP, 0, linePath.ExtractPositions().size() / 3);
     linePath.vao->Unbind();
     glUseProgram(0);
 }
@@ -326,27 +325,31 @@ void GraphicsPipeline::RenderScene(Scene& scene) {
     if (Input::IsMouseButtonJustPressed(GLFW_MOUSE_BUTTON_1)) {
         ClearSelection(scene);
         for (int i = 0; i < scene.linePaths.size(); i++) {
-            m_currentSelectedSpace = scene.linePaths[i].GetSelectedGizmo(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
-            if(m_currentSelectedSpace != nullptr) {
+            m_currentSelectedControlIndex = scene.linePaths[i].GetSelectedControlIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
+            if(m_currentSelectedControlIndex != -1) {
                 m_currentSelectedLinePathIndex = i;
                 return;
             }
         }
     }
 
-    if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS && m_currentSelectedSpace != nullptr) {
-        m_currentSelectedSpace->position = worldPos;
-        if (m_currentSelectedSpace->link != nullptr) {
-            m_currentSelectedSpace->link->position = m_currentSelectedSpace->position;
-        }
+    if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS && m_currentSelectedControlIndex != -1) {
+        scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position = worldPos;
         scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
         if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
         if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
     }
 
-    if (Input::IsKeyJustPressed(GLFW_KEY_E) && m_currentSelectedSpace != nullptr) {
-        scene.linePaths[m_currentSelectedLinePathIndex].Extrude(worldPos);
-        RegisterLinePath(scene.linePaths[m_currentSelectedLinePathIndex]);
+    if ((Input::keyStates[GLFW_KEY_B] == GLFW_PRESS || Input::keyStates[GLFW_KEY_B] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0 && m_currentSelectedControlIndex != -1) {
+        if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.linePaths[m_currentSelectedLinePathIndex].controls.size()) {
+            scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber += Input::mouseScrollVector.y;
+            scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber = std::clamp(scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber, 0, 3);
+            scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
+        }
+    }
+
+    if (Input::IsKeyJustPressed(GLFW_KEY_E) && m_currentSelectedControlIndex != -1) {
+        scene.linePaths[m_currentSelectedLinePathIndex].Extrude(m_currentSelectedControlIndex, worldPos);
         ClearSelection(scene);
     }
 

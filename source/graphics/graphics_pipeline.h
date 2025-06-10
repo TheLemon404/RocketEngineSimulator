@@ -49,8 +49,8 @@ class GraphicsPipeline {
     BufferObject<int>* m_quadIndices;
 
     //for selecting gizmos
-    SelectableSpace* m_currentSelectedSpace = nullptr;
-    int m_currentSelectedLinePathIndex = 0;
+    int m_currentSelectedControlIndex = -1;
+    int m_currentSelectedLinePathIndex = -1;
 
 
 public:

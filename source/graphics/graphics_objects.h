@@ -94,31 +94,36 @@ struct BufferObject {
     void Unbind();
 };
 
-struct SelectableSpace {
+struct Control {
     glm::vec3 position;
-    float radius = 0.2f;
+    float radius = 0.1f;
     bool selected = false;
+    int bevelNumber = 0;
 
-    SelectableSpace* link = nullptr;
+    Control(glm::vec3 position) : position(position) {};
 
-    SelectableSpace(glm::vec3 position) : position(position) {};
+private:
+    std::vector<glm::vec3> RecursiveBevel(glm::vec3 a, glm::vec3 v, glm::vec3 b, float distance, int depth = 1);
 
-    void LinkTo(SelectableSpace* other);
-    void ClearLinks();
+public:
+
     void CheckSelection(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
+    std::vector<glm::vec3> ExtractBeveledPositions(glm::vec3 prevPoint, glm::vec3 nextPoint);
 };
 
 struct LinePath {
     unsigned int id = rand();
-    std::vector<SelectableSpace> controls;
+    std::vector<Control> controls;
 
-    LinePath(std::vector<SelectableSpace> controls) : controls(controls) {};
+    LinePath(std::vector<Control> controls) : controls(controls) {};
 
     std::vector<float> ExtractPositions();
-    SelectableSpace* GetSelectedGizmo(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
+    int GetSelectedControlIndex(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
 
-    void Extrude(glm::vec3 to);
+    void Extrude(int controlIndex, glm::vec3 to);
     void UpdatePositionsBuffer();
+
+    int GetNumVertices();
 
     VertexArrayObject* vao;
     BufferObject<float>* positionsBuffer;

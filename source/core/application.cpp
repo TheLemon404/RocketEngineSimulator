@@ -58,9 +58,12 @@ void Application::Run() {
                 scene.camera.rotation.z = glm::clamp(scene.camera.rotation.z, -glm::pi<float>(), glm::pi<float>());
             }
         }
-        scene.camera.position += (scene.camera.position - scene.camera.target) * (-Input::mouseScrollVector.y / 20.0f);
-        scene.camera.zoomFactor += (-Input::mouseScrollVector.y / 1000.0f);
-        scene.camera.zoomFactor = glm::clamp(scene.camera.zoomFactor, 0.000001f, 1000000.0f);
+        //to ensure that we do not zoom while beveling an edge
+        if (Input::keyStates[GLFW_KEY_B] == GLFW_RELEASE) {
+            scene.camera.position += (scene.camera.position - scene.camera.target) * (-Input::mouseScrollVector.y / 20.0f);
+            scene.camera.zoomFactor += (-Input::mouseScrollVector.y / 1000.0f);
+            scene.camera.zoomFactor = glm::clamp(scene.camera.zoomFactor, 0.000001f, 1000000.0f);
+        }
 
         //drawing
         m_graphicsPipeline->RenderScene(scene);

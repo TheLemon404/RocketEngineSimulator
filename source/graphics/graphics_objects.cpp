@@ -285,23 +285,30 @@ void Mesh::UpdateBuffers() {
     vao->Unbind();
 }
 
-void SelectableSpace::LinkTo(SelectableSpace *other) {
-    ClearLinks();
-    if (other != nullptr) {
-        other->ClearLinks();
-        this->link = other;
-        other->link = this;
+std::vector<glm::vec3> Control::RecursiveBevel(glm::vec3 a, glm::vec3 v, glm::vec3 b, float distance, int currentDepth) {
+    if (currentDepth == bevelNumber) {
+        glm::vec3 dir1 = normalize(a - v);
+        glm::vec3 dir2 = normalize(b - v);
+
+        glm::vec3 v1 = v + dir1 * distance;
+        glm::vec3 v2 = v + dir2 * distance;
+
+        return {v1, v2};
     }
+
+    glm::vec3 dir1 = normalize(v - a);
+    glm::vec3 dir2 = normalize(b - v);
+
+    glm::vec3 v1 = v - dir1 * distance;
+    glm::vec3 v2 = v + dir2 * distance;
+
+    std::vector<glm::vec3> left = RecursiveBevel(a, v1, v2, distance / 3, currentDepth + 1);
+    std::vector<glm::vec3> right = RecursiveBevel(v1, v2, b, distance / 3, currentDepth + 1);
+    left.insert(left.end(), right.begin(), right.end());
+    return left;
 }
 
-void SelectableSpace::ClearLinks() {
-    if (link != nullptr) {
-        link->link = nullptr;
-        link = nullptr;
-    }
-}
-
-void SelectableSpace::CheckSelection(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution) {
+void Control::CheckSelection(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution) {
     //convert world space to screen space
     glm::vec4 worldPosition = glm::vec4(position.x, position.y, position.z, 1.0f);
     glm::vec4 viewPosition = view * worldPosition;
@@ -309,7 +316,7 @@ void SelectableSpace::CheckSelection(glm::vec2 mousePosition, glm::mat4 view, gl
     glm::vec3 ndcPos = glm::vec3(clipPosition.x / clipPosition.w, clipPosition.y / clipPosition.w, clipPosition.z / clipPosition.w);
     glm::vec2 screenCoords = glm::ivec2((ndcPos.x + 1.0f) * 0.5f * screenResolution.x, (1.0f - ndcPos.y) * 0.5f * screenResolution.y);
 
-    if (glm::distance(screenCoords, mousePosition) < radius * 100.0f) {
+    if (glm::distance(screenCoords, mousePosition) < 20.0f) {
         selected = true;
     }
     else {
@@ -317,38 +324,66 @@ void SelectableSpace::CheckSelection(glm::vec2 mousePosition, glm::mat4 view, gl
     }
 }
 
+std::vector<glm::vec3> Control::ExtractBeveledPositions(glm::vec3 prevPoint, glm::vec3 nextPoint) {
+    return RecursiveBevel(prevPoint, position, nextPoint, radius, 1);
+}
+
 std::vector<float> LinePath::ExtractPositions() {
     std::vector<float> result;
     for (int i = 0; i < controls.size(); i++) {
-        result.push_back(controls[i].position.x);
-        result.push_back(controls[i].position.y);
-        result.push_back(controls[i].position.z);
+        if (controls[i].bevelNumber == 0) {
+            result.push_back(controls[i].position.x);
+            result.push_back(controls[i].position.y);
+            result.push_back(controls[i].position.z);
+        }
+        else {
+            std::vector<glm::vec3> beveledPositions = controls[i].ExtractBeveledPositions(controls[i - 1].position, controls[i + 1].position);
+            for (glm::vec3& position : beveledPositions) {
+                result.push_back(position.x);
+                result.push_back(position.y);
+                result.push_back(position.z);
+            }
+        }
     }
     return result;
 }
 
-SelectableSpace* LinePath::GetSelectedGizmo(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution) {
+int LinePath::GetSelectedControlIndex(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution) {
     for (int i = 0; i < controls.size(); i++) {
         controls[i].CheckSelection(mousePosition, view, projection, screenResolution);
     }
     for (int i = 0; i < controls.size(); i++) {
         if (controls[i].selected) {
-            return &controls[i];
+            return i;
         }
     }
 
-    return nullptr;
+    return -1;
 }
 
-void LinePath::Extrude(glm::vec3 to) {
-    SelectableSpace s = {to};
-    controls.push_back(s);
-    UpdatePositionsBuffer();
+void LinePath::Extrude(int controlIndex, glm::vec3 to) {
+    if (controlIndex > 0) {
+        Control s = {to};
+        controls.push_back(s);
+        UpdatePositionsBuffer();
+    }
+    else {
+        Control s = {to};
+        controls.insert(controls.begin(), s);
+        UpdatePositionsBuffer();
+    }
 }
 
 void LinePath::UpdatePositionsBuffer() {
     positionsBuffer->Upload(ExtractPositions());
 }
 
+int LinePath::GetNumVertices() {
+    int sum = 0;
+    for (int i = 0; i < controls.size(); i++) {
+        sum += pow(2, controls[i].bevelNumber);
+    }
+    return sum;
+}
 
 
