@@ -168,6 +168,11 @@ void GraphicsPipeline::ClearSelection(Scene& scene) {
             scene.linePaths[i].controls[j].selected = false;
         }
     }
+    for (int i = 0; i < scene.pipes.size(); i++) {
+        for (int j = 0; j < scene.pipes[i].path.controls.size(); j++) {
+            scene.pipes[i].path.controls[j].selected = false;
+        }
+    }
     m_currentSelectedControlIndex = -1;
 }
 
