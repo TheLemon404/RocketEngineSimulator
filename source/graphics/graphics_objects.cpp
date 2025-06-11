@@ -357,6 +357,25 @@ std::vector<glm::vec3> Control::ExtractBeveledPositions(glm::vec3 prevPoint, glm
     return RecursiveBevel(prevPoint, position, nextPoint, radius, 1);
 }
 
+glm::vec3 LinePath::RoundToMajorAxis(const glm::vec3 &v) {
+    glm::vec3 abs_v = glm::abs(v);
+
+    if (abs_v.x >= abs_v.y && abs_v.x >= abs_v.z) {
+        return {v.x >= 0 ? 1.0f : -1.0f, 0.0f, 0.0f};
+    } else if (abs_v.y >= abs_v.z) {
+        return {0.0f, v.y >= 0 ? 1.0f : -1.0f, 0.0f};
+    } else {
+        return {0.0f, 0.0f, v.z >= 0 ? 1.0f : -1.0f};
+    }
+}
+
+glm::vec3 LinePath::RountToMajorPlane(const glm::vec3 &v) {
+    glm::vec3 majorAxis = RoundToMajorAxis(v);
+    glm::vec3 secondaryAxis = RoundToMajorAxis(v - (v * abs(majorAxis)));
+    return majorAxis + secondaryAxis;
+}
+
+
 std::vector<float> LinePath::ExtractPositions() {
     std::vector<float> result;
     for (int i = 0; i < controls.size(); i++) {
@@ -391,13 +410,17 @@ int LinePath::GetSelectedControlIndex(glm::vec2 mousePosition, glm::mat4 view, g
 }
 
 int LinePath::Extrude(int controlIndex, glm::vec3 to) {
+    glm::vec3 origin = controls[controlIndex].position;
+    glm::vec3 vectorLength = to - origin;
+    glm::vec3 axis = RoundToMajorAxis(abs(normalize(to - origin)));
+
     if (controlIndex > 0) {
-        Control s = {to};
+        Control s = {origin + (vectorLength * axis)};
         controls.push_back(s);
         UpdatePositionsBuffer();
         return controls.size() - 1;
     }
-    Control s = {to};
+    Control s = {origin + (vectorLength * axis)};
     controls.insert(controls.begin(), s);
     UpdatePositionsBuffer();
     return 0;

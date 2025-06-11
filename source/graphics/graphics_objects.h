@@ -117,6 +117,9 @@ struct LinePath {
     unsigned int id = rand();
     std::vector<Control> controls;
 
+    static glm::vec3 RoundToMajorAxis(const glm::vec3& v);
+    static glm::vec3 RountToMajorPlane(const glm::vec3& v);
+
     LinePath(std::vector<Control> controls) : controls(controls) {};
 
     std::vector<float> ExtractPositions();

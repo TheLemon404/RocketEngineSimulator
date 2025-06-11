@@ -304,7 +304,6 @@ void GraphicsPipeline::RenderScene(Scene& scene) {
     glm::mat4 view = glm::lookAt(scene.camera.position, scene.camera.target, scene.camera.up);
     glm::mat4 projection = glm::perspective(glm::radians(scene.camera.fov), ((float)p_window->GetWindowDimentions().x / (float)p_window->GetWindowDimentions().y), 0.001f, 10000.0f);
 
-
     //calculate world space mouse position for object moving
     glm::vec3 planeNormal = glm::normalize(scene.camera.target - scene.camera.position);
     glm::vec3 planePosition = m_currentSelectedControlIndex != -1 ? scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position : glm::vec3(0.0);
@@ -343,7 +342,16 @@ void GraphicsPipeline::RenderScene(Scene& scene) {
     }
 
     if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS && m_currentSelectedControlIndex != -1) {
-        scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position = worldPos;
+        if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_RELEASE) {
+            scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position = worldPos;
+        }
+        else {
+            glm::vec3 origin = scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position;
+            glm::vec3 delta = worldPos - origin;
+            glm::vec3 axis = LinePath::RoundToMajorAxis(abs(glm::normalize(worldPos - origin)));
+            scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position = origin + (delta * axis);
+        }
+
         scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
         if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
         if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
@@ -357,14 +365,14 @@ void GraphicsPipeline::RenderScene(Scene& scene) {
         }
     }
 
-    if ((Input::keyStates[GLFW_KEY_S] == GLFW_PRESS || Input::keyStates[GLFW_KEY_S] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0 && m_currentSelectedControlIndex != -1) {
+    if ((Input::keyStates[GLFW_KEY_R] == GLFW_PRESS || Input::keyStates[GLFW_KEY_R] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0 && m_currentSelectedControlIndex != -1) {
         if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.linePaths[m_currentSelectedLinePathIndex].controls.size()) {
             scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].radius += Input::mouseScrollVector.y / 100.0f;
             scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
         }
     }
 
-    if (Input::IsKeyJustPressed(GLFW_KEY_E) && m_currentSelectedControlIndex != -1) {
+    if (Input::IsKeyJustReleased(GLFW_KEY_E) && m_currentSelectedControlIndex != -1) {
         int newSelectedControl = scene.linePaths[m_currentSelectedLinePathIndex].Extrude(m_currentSelectedControlIndex, worldPos);
         ClearSelection(scene);
         m_currentSelectedControlIndex = newSelectedControl;

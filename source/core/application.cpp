@@ -59,7 +59,7 @@ void Application::Run() {
             }
         }
         //to ensure that we do not zoom while beveling an edge
-        if (Input::keyStates[GLFW_KEY_B] == GLFW_RELEASE && Input::keyStates[GLFW_KEY_S] == GLFW_RELEASE) {
+        if (Input::keyStates[GLFW_KEY_B] == GLFW_RELEASE && Input::keyStates[GLFW_KEY_R] == GLFW_RELEASE) {
             scene.camera.position += (scene.camera.position - scene.camera.target) * (-Input::mouseScrollVector.y / 20.0f);
             scene.camera.zoomFactor += (-Input::mouseScrollVector.y / 1000.0f);
             scene.camera.zoomFactor = glm::clamp(scene.camera.zoomFactor, 0.000001f, 1000000.0f);
