@@ -122,7 +122,8 @@ struct LinePath {
 
     LinePath(std::vector<Control> controls) : controls(controls) {};
 
-    std::vector<float> ExtractPositions();
+    std::vector<float> ExtractPositionsArray();
+    std::vector<glm::vec3> ExtractPositions();
     int GetSelectedControlIndex(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
 
     int Extrude(int controlIndex, glm::vec3 to);
@@ -132,6 +133,25 @@ struct LinePath {
 
     VertexArrayObject* vao;
     BufferObject<float>* positionsBuffer;
+};
+
+struct Pipe {
+    unsigned int id = rand();
+    LinePath path;
+
+    Pipe(LinePath path) : path(path) {};
+
+    int segments = 32;
+
+    std::vector<float> positions;
+
+    VertexArrayObject* vao;
+    BufferObject<float>* positionsBuffer;
+
+    void UpdatePositionsBuffer();
+
+    std::vector<glm::vec3> GenerateRing(glm::vec3 center, glm::vec3 axis, float radius);
+    std::vector<float> ExtractPositionsArray();
 };
 
 struct TextureObject {
@@ -175,6 +195,7 @@ struct Mesh {
 struct Scene {
     std::vector<Mesh> meshes;
     std::vector<LinePath> linePaths;
+    std::vector<Pipe> pipes;
     Camera camera;
 
     Mesh* GetMeshFromID(unsigned int id) { for (int i = 0; i < meshes.size(); i++) if (meshes[i].id == id) return &meshes[i]; };

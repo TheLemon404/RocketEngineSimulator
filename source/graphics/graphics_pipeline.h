@@ -49,8 +49,10 @@ class GraphicsPipeline {
     BufferObject<int>* m_quadIndices;
 
     //for selecting gizmos
+    bool m_isLineSelected = false;
     int m_currentSelectedControlIndex = -1;
     int m_currentSelectedLinePathIndex = -1;
+    int m_currentSelectedPipeIndex = -1;
 
 
 public:
@@ -58,6 +60,7 @@ public:
 
     void RegisterMesh(Mesh& mesh);
     void RegisterLinePath(LinePath& linePath);
+    void RegisterPipe(Pipe& pipe);
     void RegisterScene(Scene& scene);
 
     void Initialize();
@@ -70,9 +73,13 @@ public:
     void DrawDebugCircle2D(glm::vec2 center, float radius, glm::vec3 color);
     void DrawLinePathGizmos(LinePath linePath, Camera camera);
 
+    //non rendering per-frame operations
+    void UpdateGeometry(Scene& scene);
+
     //rendering
-    void Rendermesh(Mesh& mesh, glm::mat4 view, glm::mat4 projection);
+    void RenderMesh(Mesh& mesh, glm::mat4 view, glm::mat4 projection);
     void RenderLinePath(LinePath& linePath, glm::mat4 view, glm::mat4 projection);
+    void RenderPipe(Pipe& pipe, glm::mat4 view, glm::mat4 projection);
     void RenderScene(Scene& scene);
     void DrawUI(Scene& scene);
 

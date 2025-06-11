@@ -376,7 +376,7 @@ glm::vec3 LinePath::RountToMajorPlane(const glm::vec3 &v) {
 }
 
 
-std::vector<float> LinePath::ExtractPositions() {
+std::vector<float> LinePath::ExtractPositionsArray() {
     std::vector<float> result;
     for (int i = 0; i < controls.size(); i++) {
         if (controls[i].bevelNumber == 0) {
@@ -390,6 +390,22 @@ std::vector<float> LinePath::ExtractPositions() {
                 result.push_back(position.x);
                 result.push_back(position.y);
                 result.push_back(position.z);
+            }
+        }
+    }
+    return result;
+}
+
+std::vector<glm::vec3> LinePath::ExtractPositions() {
+    std::vector<glm::vec3> result;
+    for (int i = 0; i < controls.size(); i++) {
+        if (controls[i].bevelNumber == 0) {
+            result.push_back(controls[i].position);
+        }
+        else {
+            std::vector<glm::vec3> beveledPositions = controls[i].ExtractBeveledPositions(controls[i - 1].position, controls[i + 1].position);
+            for (glm::vec3& position : beveledPositions) {
+                result.push_back(position);
             }
         }
     }
@@ -422,12 +438,11 @@ int LinePath::Extrude(int controlIndex, glm::vec3 to) {
     }
     Control s = {origin + (vectorLength * axis)};
     controls.insert(controls.begin(), s);
-    UpdatePositionsBuffer();
     return 0;
 }
 
 void LinePath::UpdatePositionsBuffer() {
-    positionsBuffer->Upload(ExtractPositions());
+    positionsBuffer->Upload(ExtractPositionsArray());
 }
 
 int LinePath::GetNumVertices() {
@@ -438,4 +453,53 @@ int LinePath::GetNumVertices() {
     return sum;
 }
 
+void Pipe::UpdatePositionsBuffer() {
+    positionsBuffer->Upload(ExtractPositionsArray());
+}
 
+std::vector<glm::vec3> Pipe::GenerateRing(glm::vec3 center, glm::vec3 axis, float radius) {
+    std::vector<glm::vec3> vertices;
+
+    // Normalize the axis
+    axis = glm::normalize(axis);
+
+    // Create two perpendicular vectors to the axis
+    glm::vec3 up = glm::vec3(0, 1, 0);
+    if (abs(glm::dot(axis, up)) > 0.9f) {
+        up = glm::vec3(1, 0, 0);  // Use different up if axis is nearly vertical
+    }
+
+    glm::vec3 right = glm::normalize(glm::cross(axis, up));
+    up = glm::cross(right, axis);
+
+    for (int i = 0; i <= segments; i++) {
+        float angle = (2.0f * M_PI * i) / segments;
+
+        // Generate point on unit circle
+        glm::vec3 circlePoint = cos(angle) * right + sin(angle) * up;
+
+        // Scale by radius and translate to center
+        vertices.push_back(center + radius * circlePoint);
+    }
+
+    return vertices;
+}
+
+std::vector<float> Pipe::ExtractPositionsArray() {
+    std::vector<float> result;
+    std::vector<glm::vec3> points = path.ExtractPositions();
+    for (int i = 0; i < points.size(); i++) {
+        glm::vec3 axis = glm::vec3(0, 1, 0);
+        if (0 < i && i < points.size() - 1) axis = glm::normalize(points[i + 1] - points[i - 1]);
+        else if (i == 0) axis = glm::normalize(points[i + 1] - points[i]);
+        else if (i == points.size() - 1) axis = glm::normalize(points[i] - points[i - 1]);
+
+        std::vector<glm::vec3> ring = GenerateRing(points[i], axis, 0.2f);
+        for (glm::vec3& p : ring) {
+            result.push_back(p.x);
+            result.push_back(p.y);
+            result.push_back(p.z);
+        }
+    }
+    return result;
+}
