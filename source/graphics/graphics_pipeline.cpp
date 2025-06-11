@@ -343,14 +343,23 @@ void GraphicsPipeline::RenderScene(Scene& scene) {
     if ((Input::keyStates[GLFW_KEY_B] == GLFW_PRESS || Input::keyStates[GLFW_KEY_B] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0 && m_currentSelectedControlIndex != -1) {
         if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.linePaths[m_currentSelectedLinePathIndex].controls.size()) {
             scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber += Input::mouseScrollVector.y;
-            scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber = std::clamp(scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber, 0, 3);
+            scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber = std::clamp(scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber, 0, 4);
+            scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
+        }
+    }
+
+    if ((Input::keyStates[GLFW_KEY_S] == GLFW_PRESS || Input::keyStates[GLFW_KEY_S] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0 && m_currentSelectedControlIndex != -1) {
+        if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.linePaths[m_currentSelectedLinePathIndex].controls.size()) {
+            scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].radius += Input::mouseScrollVector.y / 100.0f;
             scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
         }
     }
 
     if (Input::IsKeyJustPressed(GLFW_KEY_E) && m_currentSelectedControlIndex != -1) {
-        scene.linePaths[m_currentSelectedLinePathIndex].Extrude(m_currentSelectedControlIndex, worldPos);
+        int newSelectedControl = scene.linePaths[m_currentSelectedLinePathIndex].Extrude(m_currentSelectedControlIndex, worldPos);
         ClearSelection(scene);
+        m_currentSelectedControlIndex = newSelectedControl;
+        scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].selected = true;
     }
 
     glDisable(GL_DEPTH_TEST);

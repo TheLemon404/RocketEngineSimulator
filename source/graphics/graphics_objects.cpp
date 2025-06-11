@@ -152,11 +152,19 @@ void VertexArrayObject::Unbind() {
     glBindVertexArray(0);
 }
 
+void VertexArrayObject::CleanUp() {
+    glDeleteVertexArrays(1, &id);
+}
+
 template<typename T> BufferObject<T>::BufferObject() {
     glGenBuffers(1, &id);
 }
 
 template<typename T> BufferObject<T>::~BufferObject() {
+    glDeleteBuffers(1, &id);
+}
+
+template<typename T> void BufferObject<T>::CleanUp() {
     glDeleteBuffers(1, &id);
 }
 
@@ -285,6 +293,20 @@ void Mesh::UpdateBuffers() {
     vao->Unbind();
 }
 
+void Scene::CleanUp() {
+    for (int i = 0; i < meshes.size(); i++) {
+        meshes[i].vao->CleanUp();
+        meshes[i].positionsBuffer->CleanUp();
+        meshes[i].uvsBuffer->CleanUp();
+        meshes[i].normalsBuffer->CleanUp();
+        meshes[i].indicesBuffer->CleanUp();
+    }
+    for (int i = 0; i < linePaths.size(); i++) {
+        linePaths[i].vao->CleanUp();
+        linePaths[i].positionsBuffer->CleanUp();
+    }
+}
+
 std::vector<glm::vec3> Control::RecursiveBevel(glm::vec3 a, glm::vec3 v, glm::vec3 b, float distance, int currentDepth) {
     if (currentDepth == bevelNumber) {
         glm::vec3 dir1 = normalize(a - v);
@@ -302,8 +324,15 @@ std::vector<glm::vec3> Control::RecursiveBevel(glm::vec3 a, glm::vec3 v, glm::ve
     glm::vec3 v1 = v - dir1 * distance;
     glm::vec3 v2 = v + dir2 * distance;
 
-    std::vector<glm::vec3> left = RecursiveBevel(a, v1, v2, distance / 3, currentDepth + 1);
-    std::vector<glm::vec3> right = RecursiveBevel(v1, v2, b, distance / 3, currentDepth + 1);
+    //calculate dynamic bevel distance based on angle of elbow
+    float dotProduct = glm::dot(v1, v2);
+    float newDistance = distance;
+    if (dotProduct > 0.5) newDistance /= 4;
+    else if (dotProduct > 0) newDistance /= 3;
+    else newDistance /= 2;
+
+    std::vector<glm::vec3> left = RecursiveBevel(a, v1, v2, newDistance, currentDepth + 1);
+    std::vector<glm::vec3> right = RecursiveBevel(v1, v2, b, newDistance, currentDepth + 1);
     left.insert(left.end(), right.begin(), right.end());
     return left;
 }
@@ -361,17 +390,17 @@ int LinePath::GetSelectedControlIndex(glm::vec2 mousePosition, glm::mat4 view, g
     return -1;
 }
 
-void LinePath::Extrude(int controlIndex, glm::vec3 to) {
+int LinePath::Extrude(int controlIndex, glm::vec3 to) {
     if (controlIndex > 0) {
         Control s = {to};
         controls.push_back(s);
         UpdatePositionsBuffer();
+        return controls.size() - 1;
     }
-    else {
-        Control s = {to};
-        controls.insert(controls.begin(), s);
-        UpdatePositionsBuffer();
-    }
+    Control s = {to};
+    controls.insert(controls.begin(), s);
+    UpdatePositionsBuffer();
+    return 0;
 }
 
 void LinePath::UpdatePositionsBuffer() {

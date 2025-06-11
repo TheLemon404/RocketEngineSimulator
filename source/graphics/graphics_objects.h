@@ -80,6 +80,7 @@ struct VertexArrayObject {
     void CreateVertexAttributePointer(int location, int length, int size, int type);
     void Bind();
     void Unbind();
+    void CleanUp();
 };
 
 template<typename T>
@@ -92,6 +93,7 @@ struct BufferObject {
     void Upload(std::vector<T> data);
     void Bind();
     void Unbind();
+    void CleanUp();
 };
 
 struct Control {
@@ -120,7 +122,7 @@ struct LinePath {
     std::vector<float> ExtractPositions();
     int GetSelectedControlIndex(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
 
-    void Extrude(int controlIndex, glm::vec3 to);
+    int Extrude(int controlIndex, glm::vec3 to);
     void UpdatePositionsBuffer();
 
     int GetNumVertices();
@@ -174,4 +176,6 @@ struct Scene {
 
     Mesh* GetMeshFromID(unsigned int id) { for (int i = 0; i < meshes.size(); i++) if (meshes[i].id == id) return &meshes[i]; };
     LinePath* GetLinePathFromID(unsigned int id) { for (int i = 0; i < linePaths.size(); i++) if (linePaths[i].id == id) return &linePaths[i]; };
+
+    void CleanUp();
 };
