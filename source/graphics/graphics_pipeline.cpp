@@ -306,20 +306,29 @@ void GraphicsPipeline::RenderScene(Scene& scene) {
 
 
     //calculate world space mouse position for object moving
+    glm::vec3 planeNormal = glm::normalize(scene.camera.target - scene.camera.position);
+    glm::vec3 planePosition = m_currentSelectedControlIndex != -1 ? scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position : glm::vec3(0.0);
     glm::vec2 ndc = glm::vec2((2.0f * Input::mousePosition.x) / p_window->GetWindowDimentions().x - 1.0f, 1.0f - (2.0 * Input::mousePosition.y) / p_window->GetWindowDimentions().y);
     glm::mat4 inverseViewProjectionMatrix = glm::inverse(projection * view);
     glm::vec4 nearClip = {ndc.x, ndc.y, -1.0f, 1.0f};
-    glm::vec4 farClip = {ndc.x, ndc.y, 1.0f, 1.0f};
+    glm::vec4 farClip = {ndc.x, ndc.y, 0.0f, 1.0f};
     glm::vec4 nearWorld = inverseViewProjectionMatrix * nearClip;
     glm::vec4 farWorld = inverseViewProjectionMatrix * farClip;
     glm::vec3 near = glm::vec3(nearWorld) / nearWorld.w;
     glm::vec3 far = glm::vec3(farWorld) / farWorld.w;
-    glm::vec3 rayDirection = far - near;
     glm::vec3 worldPos;
-    if (rayDirection.y != 0.0f) {
-        float t = -near.y / rayDirection.y;
-        worldPos = near + t * rayDirection;
+    glm::vec3 rayDir = glm::normalize(glm::vec3(far - near));
+    glm::vec3 rayOrigin = glm::vec3(near);
+
+    // Step 5: Intersect ray with plane
+    float denominator = glm::dot(planeNormal, rayDir);
+    if (abs(denominator) < 1e-6) {
+        // Ray is parallel to plane
+        worldPos = glm::vec3(0,0,0);
     }
+
+    float t = glm::dot(planeNormal, (planePosition - rayOrigin)) / denominator;
+    worldPos = rayOrigin + t * rayDir;
 
     //manage gizmo selection and linePath manipulation
     if (Input::IsMouseButtonJustPressed(GLFW_MOUSE_BUTTON_1)) {
