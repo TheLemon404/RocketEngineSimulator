@@ -39,7 +39,7 @@ void GraphicsPipeline::RegisterMesh(Mesh& mesh) {
     }
 
     //indices
-    mesh.indicesBuffer = new BufferObject<int>();
+    mesh.indicesBuffer = new BufferObject<unsigned int>();
     mesh.indicesBuffer->Upload(mesh.indices);
 
     mesh.vao->Unbind();
@@ -48,12 +48,14 @@ void GraphicsPipeline::RegisterMesh(Mesh& mesh) {
 }
 
 void GraphicsPipeline::RegisterLinePath(LinePath &linePath) {
+    linePath.UpdatePositionsArray();
+
     linePath.vao = new VertexArrayObject();
     linePath.vao->Bind();
 
     //vertex positions
     linePath.positionsBuffer = new BufferObject<float>();
-    linePath.positionsBuffer->Upload(linePath.ExtractPositionsArray());
+    linePath.positionsBuffer->Upload(linePath.positions);
     linePath.vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
 
     linePath.vao->Unbind();
@@ -62,12 +64,19 @@ void GraphicsPipeline::RegisterLinePath(LinePath &linePath) {
 }
 
 void GraphicsPipeline::RegisterPipe(Pipe &pipe) {
+    pipe.UpdateArrays();
+
     pipe.vao = new VertexArrayObject();
     pipe.vao->Bind();
 
+    //vertex positions
     pipe.positionsBuffer = new BufferObject<float>();
-    pipe.positionsBuffer->Upload(pipe.ExtractPositionsArray());
+    pipe.positionsBuffer->Upload(pipe.positions);
     pipe.vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
+
+    //indices
+    pipe.indicesBuffer = new BufferObject<unsigned int>();
+    pipe.indicesBuffer->Upload(pipe.indices);
 
     pipe.vao->Unbind();
 
@@ -136,7 +145,7 @@ void GraphicsPipeline::Initialize() {
     });
     m_quadVAO->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
 
-    m_quadIndices = new BufferObject<int>();
+    m_quadIndices = new BufferObject<unsigned int>();
     m_quadIndices->Upload({0, 1, 2, 2, 3, 0});
 
     //initialize imgui context
@@ -265,9 +274,11 @@ void GraphicsPipeline::DrawDebugCircle2D(glm::vec2 center, float radius, glm::ve
 }
 
 void GraphicsPipeline::DrawLinePathGizmos(LinePath linePath, Camera camera) {
+    glDisable(GL_DEPTH_TEST);
     for (int i = 0; i < linePath.controls.size(); i++) {
         DrawDebugSphere3D(linePath.controls[i].position, 0.2f, linePath.controls[i].selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 0.0, 0.0), camera);
     }
+    glEnable(GL_DEPTH_TEST);
 }
 
 void GraphicsPipeline::RenderMesh(Mesh& mesh, glm::mat4 view, glm::mat4 projection) {
@@ -310,7 +321,7 @@ void GraphicsPipeline::RenderLinePath(LinePath& linePath, glm::mat4 view, glm::m
     m_linePathProgram->UploadUniformVec4("tint", glm::vec4(1.0f));
     m_linePathProgram->UploadUniformMat4("transform", glm::identity<glm::mat4>());
     linePath.vao->Bind();
-    glDrawArrays(GL_LINE_STRIP, 0, linePath.ExtractPositionsArray().size() / 3);
+    glDrawArrays(GL_LINE_STRIP, 0, linePath.positions.size() / 3);
     linePath.vao->Unbind();
     glUseProgram(0);
 }
@@ -321,7 +332,8 @@ void GraphicsPipeline::RenderPipe(Pipe &pipe, glm::mat4 view, glm::mat4 projecti
     m_unlitProgram->UploadUniformMat4("view", view);
     m_unlitProgram->UploadUniformMat4("transform", glm::identity<glm::mat4>());
     pipe.vao->Bind();
-    glDrawArrays(GL_LINE_STRIP, 0, pipe.ExtractPositionsArray().size() / 3);
+    //glDrawArrays(GL_LINE_STRIP, 0, pipe.positions.size() / 3);
+    glDrawElements(GL_TRIANGLES, pipe.indices.size(), GL_UNSIGNED_INT, 0);
     pipe.vao->Unbind();
     glUseProgram(0);
 }

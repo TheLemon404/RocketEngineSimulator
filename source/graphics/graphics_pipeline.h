@@ -46,7 +46,7 @@ class GraphicsPipeline {
     //fullscreen quad
     VertexArrayObject* m_quadVAO;
     BufferObject<float>* m_quadPositions;
-    BufferObject<int>* m_quadIndices;
+    BufferObject<unsigned int>* m_quadIndices;
 
     //for selecting gizmos
     bool m_isLineSelected = false;

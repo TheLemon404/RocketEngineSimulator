@@ -122,7 +122,7 @@ struct LinePath {
 
     LinePath(std::vector<Control> controls) : controls(controls) {};
 
-    std::vector<float> ExtractPositionsArray();
+    void UpdatePositionsArray();
     std::vector<glm::vec3> ExtractPositions();
     int GetSelectedControlIndex(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
 
@@ -130,6 +130,8 @@ struct LinePath {
     void UpdatePositionsBuffer();
 
     int GetNumVertices();
+
+    std::vector<float> positions;
 
     VertexArrayObject* vao;
     BufferObject<float>* positionsBuffer;
@@ -144,14 +146,16 @@ struct Pipe {
     int segments = 32;
 
     std::vector<float> positions;
+    std::vector<unsigned int> indices;
 
     VertexArrayObject* vao;
     BufferObject<float>* positionsBuffer;
+    BufferObject<unsigned int>* indicesBuffer;
 
     void UpdatePositionsBuffer();
 
     std::vector<glm::vec3> GenerateRing(glm::vec3 center, glm::vec3 axis, float radius);
-    std::vector<float> ExtractPositionsArray();
+    void UpdateArrays();
 };
 
 struct TextureObject {
@@ -183,13 +187,13 @@ struct Mesh {
     std::vector<float> vertices = {};
     std::vector<float> uvs = {};
     std::vector<float> normals = {};
-    std::vector<int> indices = {};
+    std::vector<unsigned int> indices = {};
 
     VertexArrayObject* vao;
     BufferObject<float>* positionsBuffer;
     BufferObject<float>* uvsBuffer;
     BufferObject<float>* normalsBuffer;
-    BufferObject<int>* indicesBuffer;
+    BufferObject<unsigned int>* indicesBuffer;
 };
 
 struct Scene {

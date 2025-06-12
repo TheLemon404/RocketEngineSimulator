@@ -18,7 +18,7 @@
 #include "glm/gtc/type_ptr.hpp"
 
 template struct BufferObject<float>;
-template struct BufferObject<int>;
+template struct BufferObject<unsigned int>;
 
 void Camera::RotateAround(float angle, glm::vec3 axis, glm::vec3 originPoint) {
     // Create the transformation matrix
@@ -173,7 +173,7 @@ template<typename T> void BufferObject<T>::Upload(std::vector<T> data) {
     if (std::is_same<T, float>::value) {
         glBufferData(GL_ARRAY_BUFFER, data.size() * sizeof(float), data.data(), GL_DYNAMIC_DRAW);
     }
-    else if (std::is_same<T, int>::value) {
+    else if (std::is_same<T, unsigned int>::value) {
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.size() * sizeof(int), data.data(), GL_DYNAMIC_DRAW);
     }
 }
@@ -182,7 +182,7 @@ template<typename T> void BufferObject<T>::Bind() {
     if (std::is_same<T, float>::value) {
         glBindBuffer(GL_ARRAY_BUFFER, id);
     }
-    else if (std::is_same<T, int>::value) {
+    else if (std::is_same<T, unsigned int>::value) {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id);
     }
 }
@@ -191,7 +191,7 @@ template<typename T> void BufferObject<T>::Unbind() {
     if (std::is_same<T, float>::value) {
         glBindBuffer(GL_ARRAY_BUFFER, 0);
     }
-    else if (std::is_same<T, int>::value) {
+    else if (std::is_same<T, unsigned int>::value) {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 }
@@ -376,24 +376,23 @@ glm::vec3 LinePath::RountToMajorPlane(const glm::vec3 &v) {
 }
 
 
-std::vector<float> LinePath::ExtractPositionsArray() {
-    std::vector<float> result;
+void LinePath::UpdatePositionsArray() {
+    positions.clear();
     for (int i = 0; i < controls.size(); i++) {
         if (controls[i].bevelNumber == 0) {
-            result.push_back(controls[i].position.x);
-            result.push_back(controls[i].position.y);
-            result.push_back(controls[i].position.z);
+            positions.push_back(controls[i].position.x);
+            positions.push_back(controls[i].position.y);
+            positions.push_back(controls[i].position.z);
         }
         else {
             std::vector<glm::vec3> beveledPositions = controls[i].ExtractBeveledPositions(controls[i - 1].position, controls[i + 1].position);
             for (glm::vec3& position : beveledPositions) {
-                result.push_back(position.x);
-                result.push_back(position.y);
-                result.push_back(position.z);
+                positions.push_back(position.x);
+                positions.push_back(position.y);
+                positions.push_back(position.z);
             }
         }
     }
-    return result;
 }
 
 std::vector<glm::vec3> LinePath::ExtractPositions() {
@@ -433,16 +432,17 @@ int LinePath::Extrude(int controlIndex, glm::vec3 to) {
     if (controlIndex > 0) {
         Control s = {origin + (vectorLength * axis)};
         controls.push_back(s);
-        UpdatePositionsBuffer();
         return controls.size() - 1;
     }
+
     Control s = {origin + (vectorLength * axis)};
     controls.insert(controls.begin(), s);
     return 0;
 }
 
 void LinePath::UpdatePositionsBuffer() {
-    positionsBuffer->Upload(ExtractPositionsArray());
+    UpdatePositionsArray();
+    positionsBuffer->Upload(positions);
 }
 
 int LinePath::GetNumVertices() {
@@ -454,52 +454,94 @@ int LinePath::GetNumVertices() {
 }
 
 void Pipe::UpdatePositionsBuffer() {
-    positionsBuffer->Upload(ExtractPositionsArray());
+    UpdateArrays();
+    positionsBuffer->Upload(positions);
+    indicesBuffer->Upload(indices);
 }
 
 std::vector<glm::vec3> Pipe::GenerateRing(glm::vec3 center, glm::vec3 axis, float radius) {
-    std::vector<glm::vec3> vertices;
+    std::vector<glm::vec3> ring;
 
     // Normalize the axis
     axis = glm::normalize(axis);
 
     // Create two perpendicular vectors to the axis
     glm::vec3 up = glm::vec3(0, 1, 0);
-    if (abs(glm::dot(axis, up)) > 0.9f) {
-        up = glm::vec3(1, 0, 0);  // Use different up if axis is nearly vertical
-    }
 
     glm::vec3 right = glm::normalize(glm::cross(axis, up));
-    up = glm::cross(right, axis);
+    up = glm::normalize(glm::cross(right, axis)); // Recalculate up to ensure orthogonality
 
-    for (int i = 0; i <= segments; i++) {
+    // Generate vertices around the ring
+    for (int i = 0; i < segments; i++) {
         float angle = (2.0f * M_PI * i) / segments;
-
-        // Generate point on unit circle
-        glm::vec3 circlePoint = cos(angle) * right + sin(angle) * up;
-
-        // Scale by radius and translate to center
-        vertices.push_back(center + radius * circlePoint);
+        glm::vec3 point = center + radius * (cos(angle) * right + sin(angle) * up);
+        ring.push_back(point);
     }
 
-    return vertices;
+    return ring;
 }
 
-std::vector<float> Pipe::ExtractPositionsArray() {
-    std::vector<float> result;
-    std::vector<glm::vec3> points = path.ExtractPositions();
-    for (int i = 0; i < points.size(); i++) {
-        glm::vec3 axis = glm::vec3(0, 1, 0);
-        if (0 < i && i < points.size() - 1) axis = glm::normalize(points[i + 1] - points[i - 1]);
-        else if (i == 0) axis = glm::normalize(points[i + 1] - points[i]);
-        else if (i == points.size() - 1) axis = glm::normalize(points[i] - points[i - 1]);
+void Pipe::UpdateArrays() {
+    positions.clear();
+    indices.clear();
 
+    std::vector<glm::vec3> points = path.ExtractPositions();
+
+    if (points.size() < 2) {
+        return;
+    }
+
+    // Generate vertices for each point along the path
+    for (int i = 0; i < points.size(); i++) {
+        glm::vec3 axis = glm::vec3(0, 1, 0); // default axis
+
+        // Calculate proper axis direction based on path direction
+        if (points.size() > 1) {
+            if (i == 0) {
+                // First point: use direction to next point
+                axis = glm::normalize(points[i + 1] - points[i]);
+            } else if (i == points.size() - 1) {
+                // Last point: use direction from previous point
+                axis = glm::normalize(points[i] - points[i - 1]);
+            } else {
+                // Middle points: use average direction for smoother transitions
+                glm::vec3 dir1 = glm::normalize(points[i] - points[i - 1]);
+                glm::vec3 dir2 = glm::normalize(points[i + 1] - points[i]);
+                axis = glm::normalize(dir1 + dir2);
+            }
+        }
+
+        // Generate ring of vertices around this point
         std::vector<glm::vec3> ring = GenerateRing(points[i], axis, 0.2f);
-        for (glm::vec3& p : ring) {
-            result.push_back(p.x);
-            result.push_back(p.y);
-            result.push_back(p.z);
+        for (const glm::vec3& p : ring) {
+            positions.push_back(p.x);
+            positions.push_back(p.y);
+            positions.push_back(p.z);
         }
     }
-    return result;
+
+    // Generate indices to connect the rings
+    for (int i = 0; i < points.size() - 1; i++) {
+        for (int v = 0; v < segments; v++) {
+            // Current ring vertices
+            int current = i * segments + v;
+            int currentNext = i * segments + ((v + 1) % segments);
+
+            // Next ring vertices
+            int next = (i + 1) * segments + v;
+            int nextNext = (i + 1) * segments + ((v + 1) % segments);
+
+            // Create two triangles to form a quad between rings
+            // Triangle 1: current -> next -> currentNext
+            indices.push_back(current);
+            indices.push_back(next);
+            indices.push_back(currentNext);
+
+            // Triangle 2: currentNext -> next -> nextNext
+            indices.push_back(currentNext);
+            indices.push_back(next);
+            indices.push_back(nextNext);
+        }
+    }
 }
+
