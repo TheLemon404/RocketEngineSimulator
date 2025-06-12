@@ -568,16 +568,7 @@ void Pipe::UpdateArrays() {
         }
         tangent = newTangent;
 
-        // Generate ring of vertices around this point (this code is hard to understand but I did write it and understand it at one point in time)
-        float lerpedRadius = path.controls[controlIndex].radius;
-
-        //if (controlIndex > 0 && controlIndex < path.controls.size() - 1) {
-        //    float factor = ((float)numVertsForCurrentControl / (float)path.controls[controlIndex].GetNumBeveledVertices());
-        //    if (factor < 0.5) lerpedRadius = path.controls[controlIndex - 1].radius + (factor / 0.5f) * (path.controls[controlIndex].radius - path.controls[controlIndex - 1].radius);
-        //    else if (factor >= 0.5) lerpedRadius = path.controls[controlIndex].radius + ((factor - 0.5f) / 0.5f) * (path.controls[controlIndex + 1].radius - path.controls[controlIndex].radius);
-        //}
-
-        std::vector<glm::vec3> ring = GenerateRingWithFrame(points[i], tangent, right, up, lerpedRadius);
+        std::vector<glm::vec3> ring = GenerateRingWithFrame(points[i], tangent, right, up, path.controls[controlIndex].radius);
         for (const glm::vec3& p : ring) {
             glm::vec3 normal = normalize(points[i] - p);
             positions.push_back(p.x);
