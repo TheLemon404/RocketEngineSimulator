@@ -98,11 +98,13 @@ struct BufferObject {
 
 struct Control {
     glm::vec3 position;
-    float radius = 0.1f;
+    float bevelRadius = 0.1f;
+    float radius = 0.2f;
     bool selected = false;
     int bevelNumber = 0;
 
     Control(glm::vec3 position) : position(position) {};
+    int GetNumBeveledVertices();
 
 private:
     std::vector<glm::vec3> RecursiveBevel(glm::vec3 a, glm::vec3 v, glm::vec3 b, float distance, int depth = 1);
@@ -146,15 +148,18 @@ struct Pipe {
     int segments = 32;
 
     std::vector<float> positions;
+    std::vector<float> normals;
     std::vector<unsigned int> indices;
 
     VertexArrayObject* vao;
     BufferObject<float>* positionsBuffer;
+    BufferObject<float>* normalsBuffer;
     BufferObject<unsigned int>* indicesBuffer;
 
     void UpdatePositionsBuffer();
 
-    std::vector<glm::vec3> GenerateRing(glm::vec3 center, glm::vec3 axis, float radius);
+    void TransportFrame(glm::vec3 prevTangent, glm::vec3 newTangent, glm::vec3& right, glm::vec3& up);
+    std::vector<glm::vec3> GenerateRingWithFrame(glm::vec3 center, glm::vec3 tangent, glm::vec3 right, glm::vec3 up, float radius);
     void UpdateArrays();
 };
 

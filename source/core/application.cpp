@@ -24,10 +24,6 @@ void Application::Initialize() {
 
     scene.meshes.push_back(Mesh::LoadmeshFromOBJ("resources/meshes/monkey_smooth.obj"));
     scene.meshes[0].position.x = 2.0f;
-    scene.linePaths.push_back({{
-            glm::vec3(0.0f, 0.0f, -1.0f),
-            glm::vec3(0.0f, 0.0f, 1.0f)
-        }});
 
     scene.pipes.push_back({{{
             glm::vec3(-1.0f, 0.0f, -1.0f),
@@ -64,7 +60,7 @@ void Application::Run() {
             }
         }
         //to ensure that we do not zoom while beveling an edge
-        if (Input::keyStates[GLFW_KEY_B] == GLFW_RELEASE && Input::keyStates[GLFW_KEY_R] == GLFW_RELEASE) {
+        if (Input::keyStates[GLFW_KEY_B] == GLFW_RELEASE && Input::keyStates[GLFW_KEY_R] == GLFW_RELEASE && Input::keyStates[GLFW_KEY_S] == GLFW_RELEASE) {
             scene.camera.position += (scene.camera.position - scene.camera.target) * (-Input::mouseScrollVector.y / 20.0f);
             scene.camera.zoomFactor += (-Input::mouseScrollVector.y / 1000.0f);
             scene.camera.zoomFactor = glm::clamp(scene.camera.zoomFactor, 0.000001f, 1000000.0f);

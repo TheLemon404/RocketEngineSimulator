@@ -74,6 +74,11 @@ void GraphicsPipeline::RegisterPipe(Pipe &pipe) {
     pipe.positionsBuffer->Upload(pipe.positions);
     pipe.vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
 
+    //normals
+    pipe.normalsBuffer = new BufferObject<float>();
+    pipe.normalsBuffer->Upload(pipe.normals);
+    pipe.vao->CreateVertexAttributePointer(1, 3, sizeof(float), GL_FLOAT);
+
     //indices
     pipe.indicesBuffer = new BufferObject<unsigned int>();
     pipe.indicesBuffer->Upload(pipe.indices);
@@ -131,6 +136,13 @@ void GraphicsPipeline::Initialize() {
     m_linePathFragmentShader->Load("resources/shaders/linePath.frag");
     m_linePathProgram = new ShaderProgramObject();
     m_linePathProgram->Compile(m_linePathVertexShader, m_linePathFragmentShader);
+
+    m_pipeVertexShader = new ShaderObject(GL_VERTEX_SHADER);
+    m_pipeVertexShader->Load("resources/shaders/pipe.vert");
+    m_pipeFragmentShader = new ShaderObject(GL_FRAGMENT_SHADER);
+    m_pipeFragmentShader->Load("resources/shaders/pipe.frag");
+    m_pipeProgram = new ShaderProgramObject();
+    m_pipeProgram->Compile(m_pipeVertexShader, m_pipeFragmentShader);
 
     //create fullscreen quad
     m_quadVAO = new VertexArrayObject();
@@ -276,7 +288,7 @@ void GraphicsPipeline::DrawDebugCircle2D(glm::vec2 center, float radius, glm::ve
 void GraphicsPipeline::DrawLinePathGizmos(LinePath linePath, Camera camera) {
     glDisable(GL_DEPTH_TEST);
     for (int i = 0; i < linePath.controls.size(); i++) {
-        DrawDebugSphere3D(linePath.controls[i].position, 0.2f, linePath.controls[i].selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 0.0, 0.0), camera);
+        DrawDebugSphere3D(linePath.controls[i].position, std::clamp(linePath.controls[i].bevelRadius / 2.0f, 0.2f, 100.0f), linePath.controls[i].selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 0.0, 0.0), camera);
     }
     glEnable(GL_DEPTH_TEST);
 }
@@ -326,11 +338,16 @@ void GraphicsPipeline::RenderLinePath(LinePath& linePath, glm::mat4 view, glm::m
     glUseProgram(0);
 }
 
-void GraphicsPipeline::RenderPipe(Pipe &pipe, glm::mat4 view, glm::mat4 projection) {
-    m_unlitProgram->Use();
-    m_unlitProgram->UploadUniformMat4("projection", projection);
-    m_unlitProgram->UploadUniformMat4("view", view);
-    m_unlitProgram->UploadUniformMat4("transform", glm::identity<glm::mat4>());
+void GraphicsPipeline::RenderPipe(Pipe &pipe, glm::mat4 view, glm::mat4 projection, Camera camera) {
+    m_pipeProgram->Use();
+    m_pipeProgram->UploadUniformMat4("projection", projection);
+    m_pipeProgram->UploadUniformMat4("view", view);
+    m_pipeProgram->UploadUniformMat4("transform", glm::identity<glm::mat4>());
+    m_pipeProgram->UploadUniformVec3("lightColor", glm::vec3(0.5f, 0.8f, 1.0f));
+    m_pipeProgram->UploadUniformVec3("darkColor", glm::vec3(0.2f, 0.2f, 0.3f));
+    m_pipeProgram->UploadUniformVec3("fresnelColor", glm::vec3(1.0f));
+    m_pipeProgram->UploadUniformVec3("lightDirection", glm::vec3(0, -1, 0));
+    m_pipeProgram->UploadUniformVec3("viewDirection", normalize(camera.target - camera.position));
     pipe.vao->Bind();
     //glDrawArrays(GL_LINE_STRIP, 0, pipe.positions.size() / 3);
     glDrawElements(GL_TRIANGLES, pipe.indices.size(), GL_UNSIGNED_INT, 0);
@@ -338,6 +355,7 @@ void GraphicsPipeline::RenderPipe(Pipe &pipe, glm::mat4 view, glm::mat4 projecti
     glUseProgram(0);
 }
 
+// --Important-- this function contains all logic responsible for editing and controlling pipes
 void GraphicsPipeline::UpdateGeometry(Scene &scene) {
     //calculate matricies
     glm::mat4 view = glm::lookAt(scene.camera.position, scene.camera.target, scene.camera.up);
@@ -391,26 +409,13 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
         }
     }
 
+    glm::vec3 origin;
     if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS && m_currentSelectedControlIndex != -1) {
-        if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_RELEASE) {
-            if (m_isLineSelected) {
-                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position = worldPos;
-
-                scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
-            }
-            else {
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = worldPos;
-
-                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
-            }
+        if (Input::IsKeyJustReleased(GLFW_KEY_LEFT_SHIFT)) {
+            origin = scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position;
         }
-        else {
+        if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] != GLFW_RELEASE) {
             if (m_isLineSelected) {
-                glm::vec3 origin = scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position;
                 glm::vec3 delta = worldPos - origin;
                 glm::vec3 axis = LinePath::RoundToMajorAxis(abs(glm::normalize(worldPos - origin)));
                 scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position = origin + (delta * axis);
@@ -420,10 +425,25 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
                 if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
             }
             else {
-                glm::vec3 origin = scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position;
-                glm::vec3 delta = worldPos - origin;
-                glm::vec3 axis = LinePath::RoundToMajorAxis(abs(glm::normalize(worldPos - origin)));
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = origin + (delta * axis);
+                float delta = glm::distance(worldPos, origin);
+                glm::vec3 axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - origin));
+                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = (delta * axis);
+
+                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
+                if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
+                if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
+            }
+        }
+        else {
+            if (m_isLineSelected) {
+                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position = worldPos;
+
+                scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
+                if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
+                if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
+            }
+            else {
+                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = worldPos;
 
                 scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
                 if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
@@ -452,15 +472,22 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
     if ((Input::keyStates[GLFW_KEY_R] == GLFW_PRESS || Input::keyStates[GLFW_KEY_R] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0 && m_currentSelectedControlIndex != -1) {
         if (m_isLineSelected) {
             if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.linePaths[m_currentSelectedLinePathIndex].controls.size()) {
-                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].radius += Input::mouseScrollVector.y / 100.0f;
+                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelRadius += Input::mouseScrollVector.y / 100.0f;
                 scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
             }
         }
         else {
             if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.pipes[m_currentSelectedPipeIndex].path.controls.size()) {
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].radius += Input::mouseScrollVector.y / 100.0f;
+                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelRadius += Input::mouseScrollVector.y / 100.0f;
                 scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
             }
+        }
+    }
+
+    if ((Input::keyStates[GLFW_KEY_S] == GLFW_PRESS || Input::keyStates[GLFW_KEY_S] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0 && m_currentSelectedControlIndex != -1) {
+        if (!m_isLineSelected) {
+            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].radius += Input::mouseScrollVector.y / 100.0f;
+            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
         }
     }
 
@@ -524,7 +551,7 @@ void GraphicsPipeline::RenderScene(Scene& scene) {
     }
 
     for (int i = 0; i < scene.pipes.size(); i++) {
-        RenderPipe(scene.pipes[i], view, projection);
+        RenderPipe(scene.pipes[i], view, projection, scene.camera);
         DrawLinePathGizmos(scene.pipes[i].path, scene.camera);
     }
 }
@@ -557,6 +584,7 @@ void GraphicsPipeline::CleanUp() {
     delete m_quadVAO;
     delete m_normalProgram;
     delete m_linePathProgram;
+    delete m_pipeProgram;
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

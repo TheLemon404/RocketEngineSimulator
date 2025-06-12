@@ -43,6 +43,10 @@ class GraphicsPipeline {
     ShaderObject* m_linePathTesselationControlShader;
     ShaderProgramObject* m_linePathProgram;
 
+    ShaderObject* m_pipeVertexShader;
+    ShaderObject* m_pipeFragmentShader;
+    ShaderProgramObject* m_pipeProgram;
+
     //fullscreen quad
     VertexArrayObject* m_quadVAO;
     BufferObject<float>* m_quadPositions;
@@ -79,7 +83,7 @@ public:
     //rendering
     void RenderMesh(Mesh& mesh, glm::mat4 view, glm::mat4 projection);
     void RenderLinePath(LinePath& linePath, glm::mat4 view, glm::mat4 projection);
-    void RenderPipe(Pipe& pipe, glm::mat4 view, glm::mat4 projection);
+    void RenderPipe(Pipe& pipe, glm::mat4 view, glm::mat4 projection, Camera camera);
     void RenderScene(Scene& scene);
     void DrawUI(Scene& scene);
 

@@ -16,6 +16,7 @@
 #include "assimp/scene.h"
 #include "glad/glad.h"
 #include "glm/gtc/type_ptr.hpp"
+#include <cmath>
 
 template struct BufferObject<float>;
 template struct BufferObject<unsigned int>;
@@ -312,8 +313,28 @@ std::vector<glm::vec3> Control::RecursiveBevel(glm::vec3 a, glm::vec3 v, glm::ve
         glm::vec3 dir1 = normalize(a - v);
         glm::vec3 dir2 = normalize(b - v);
 
-        glm::vec3 v1 = v + dir1 * distance;
-        glm::vec3 v2 = v + dir2 * distance;
+        // Calculate the angle between directions
+        float cosAngle = glm::dot(dir1, dir2);
+        float angle = acos(glm::clamp(cosAngle, -1.0f, 1.0f));
+
+        // Adjust distance based on angle to prevent overlapping
+        // For sharp angles, we need to reduce the distance more
+        float angleAdjustment = sin(angle * 0.5f); // This gives us a factor between 0 and 1
+        float adjustedDistance = distance * angleAdjustment;
+
+        // Ensure minimum distance to prevent complete collapse
+        adjustedDistance = glm::max(adjustedDistance, distance * 0.1f);
+
+        glm::vec3 v1 = v + dir1 * adjustedDistance;
+        glm::vec3 v2 = v + dir2 * adjustedDistance;
+
+        // Additional check: if points are too close, separate them
+        float minSeparation = distance * 0.2f;
+        if (glm::distance(v1, v2) < minSeparation) {
+            glm::vec3 separation = glm::normalize(v2 - v1) * (minSeparation * 0.5f);
+            v1 -= separation;
+            v2 += separation;
+        }
 
         return {v1, v2};
     }
@@ -321,20 +342,26 @@ std::vector<glm::vec3> Control::RecursiveBevel(glm::vec3 a, glm::vec3 v, glm::ve
     glm::vec3 dir1 = normalize(v - a);
     glm::vec3 dir2 = normalize(b - v);
 
-    glm::vec3 v1 = v - dir1 * distance;
-    glm::vec3 v2 = v + dir2 * distance;
+    // Calculate angle adjustment for intermediate points too
+    float cosAngle = glm::dot(-dir1, dir2);
+    float angle = acos(glm::clamp(cosAngle, -1.0f, 1.0f));
+    float angleAdjustment = sin(angle * 0.5f);
+    float adjustedDistance = distance * angleAdjustment;
+    adjustedDistance = glm::max(adjustedDistance, distance * 0.1f);
 
-    //calculate dynamic bevel distance based on angle of elbow
-    float dotProduct = glm::dot(v1, v2);
-    float newDistance = distance;
-    if (dotProduct > 0.5) newDistance /= 4;
-    else if (dotProduct > 0) newDistance /= 3;
-    else newDistance /= 2;
+    glm::vec3 v1 = v - dir1 * adjustedDistance;
+    glm::vec3 v2 = v + dir2 * adjustedDistance;
+
+    float newDistance = adjustedDistance / 2.0f;
 
     std::vector<glm::vec3> left = RecursiveBevel(a, v1, v2, newDistance, currentDepth + 1);
     std::vector<glm::vec3> right = RecursiveBevel(v1, v2, b, newDistance, currentDepth + 1);
     left.insert(left.end(), right.begin(), right.end());
     return left;
+}
+
+int Control::GetNumBeveledVertices() {
+    return pow(2, bevelNumber);
 }
 
 void Control::CheckSelection(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution) {
@@ -354,7 +381,7 @@ void Control::CheckSelection(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 
 }
 
 std::vector<glm::vec3> Control::ExtractBeveledPositions(glm::vec3 prevPoint, glm::vec3 nextPoint) {
-    return RecursiveBevel(prevPoint, position, nextPoint, radius, 1);
+    return RecursiveBevel(prevPoint, position, nextPoint, bevelRadius, 1);
 }
 
 glm::vec3 LinePath::RoundToMajorAxis(const glm::vec3 &v) {
@@ -456,22 +483,16 @@ int LinePath::GetNumVertices() {
 void Pipe::UpdatePositionsBuffer() {
     UpdateArrays();
     positionsBuffer->Upload(positions);
+    normalsBuffer->Upload(normals);
     indicesBuffer->Upload(indices);
 }
 
-std::vector<glm::vec3> Pipe::GenerateRing(glm::vec3 center, glm::vec3 axis, float radius) {
+// Updated methods for Pipe class to fix twisting at beveled corners
+std::vector<glm::vec3> Pipe::GenerateRingWithFrame(glm::vec3 center, glm::vec3 tangent,
+                                                   glm::vec3 right, glm::vec3 up, float radius) {
     std::vector<glm::vec3> ring;
 
-    // Normalize the axis
-    axis = glm::normalize(axis);
-
-    // Create two perpendicular vectors to the axis
-    glm::vec3 up = glm::vec3(0, 1, 0);
-
-    glm::vec3 right = glm::normalize(glm::cross(axis, up));
-    up = glm::normalize(glm::cross(right, axis)); // Recalculate up to ensure orthogonality
-
-    // Generate vertices around the ring
+    // Generate vertices around the ring using the provided frame
     for (int i = 0; i < segments; i++) {
         float angle = (2.0f * M_PI * i) / segments;
         glm::vec3 point = center + radius * (cos(angle) * right + sin(angle) * up);
@@ -481,8 +502,29 @@ std::vector<glm::vec3> Pipe::GenerateRing(glm::vec3 center, glm::vec3 axis, floa
     return ring;
 }
 
+// Helper function to transport a frame along the path
+void Pipe::TransportFrame(glm::vec3 prevTangent, glm::vec3 newTangent,
+                         glm::vec3& right, glm::vec3& up) {
+    // If tangents are nearly parallel, no rotation needed
+    if (glm::length(glm::cross(prevTangent, newTangent)) < 1e-6f) {
+        return;
+    }
+
+    // Calculate rotation axis and angle
+    glm::vec3 rotationAxis = glm::normalize(glm::cross(prevTangent, newTangent));
+    float rotationAngle = acos(glm::clamp(glm::dot(prevTangent, newTangent), -1.0f, 1.0f));
+
+    // Create rotation matrix
+    glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), rotationAngle, rotationAxis);
+
+    // Apply rotation to the frame vectors
+    right = glm::vec3(rotationMatrix * glm::vec4(right, 0.0f));
+    up = glm::vec3(rotationMatrix * glm::vec4(up, 0.0f));
+}
+
 void Pipe::UpdateArrays() {
     positions.clear();
+    normals.clear();
     indices.clear();
 
     std::vector<glm::vec3> points = path.ExtractPositions();
@@ -491,32 +533,66 @@ void Pipe::UpdateArrays() {
         return;
     }
 
+    int controlIndex = 0;
+    int numVertsForCurrentControl = 0;
+
+    glm::vec3 tangent = glm::normalize(points[1] - points[0]);
+
+    // Create initial perpendicular vectors (avoiding gimbal lock)
+    glm::vec3 right, up;
+    if (abs(tangent.y) < 0.9f) {
+        right = glm::normalize(glm::cross(tangent, glm::vec3(0, 1, 0)));
+    } else {
+        right = glm::normalize(glm::cross(tangent, glm::vec3(1, 0, 0)));
+    }
+    up = glm::normalize(glm::cross(right, tangent));
+
     // Generate vertices for each point along the path
     for (int i = 0; i < points.size(); i++) {
-        glm::vec3 axis = glm::vec3(0, 1, 0); // default axis
+        glm::vec3 newTangent;
 
-        // Calculate proper axis direction based on path direction
-        if (points.size() > 1) {
-            if (i == 0) {
-                // First point: use direction to next point
-                axis = glm::normalize(points[i + 1] - points[i]);
-            } else if (i == points.size() - 1) {
-                // Last point: use direction from previous point
-                axis = glm::normalize(points[i] - points[i - 1]);
-            } else {
-                // Middle points: use average direction for smoother transitions
-                glm::vec3 dir1 = glm::normalize(points[i] - points[i - 1]);
-                glm::vec3 dir2 = glm::normalize(points[i + 1] - points[i]);
-                axis = glm::normalize(dir1 + dir2);
-            }
+        // Calculate tangent direction
+        if (i == 0) {
+            newTangent = glm::normalize(points[i + 1] - points[i]);
+        } else if (i == points.size() - 1) {
+            newTangent = glm::normalize(points[i] - points[i - 1]);
+        } else {
+            // For middle points, use the direction to the next point
+            // This avoids the averaging that causes twisting
+            newTangent = glm::normalize(points[i + 1] - points[i]);
         }
 
-        // Generate ring of vertices around this point
-        std::vector<glm::vec3> ring = GenerateRing(points[i], axis, 0.2f);
+        // Transport the frame to maintain continuity
+        if (i > 0) {
+            TransportFrame(tangent, newTangent, right, up);
+        }
+        tangent = newTangent;
+
+        // Generate ring of vertices around this point (this code is hard to understand but I did write it and understand it at one point in time)
+        float lerpedRadius = path.controls[controlIndex].radius;
+
+        //if (controlIndex > 0 && controlIndex < path.controls.size() - 1) {
+        //    float factor = ((float)numVertsForCurrentControl / (float)path.controls[controlIndex].GetNumBeveledVertices());
+        //    if (factor < 0.5) lerpedRadius = path.controls[controlIndex - 1].radius + (factor / 0.5f) * (path.controls[controlIndex].radius - path.controls[controlIndex - 1].radius);
+        //    else if (factor >= 0.5) lerpedRadius = path.controls[controlIndex].radius + ((factor - 0.5f) / 0.5f) * (path.controls[controlIndex + 1].radius - path.controls[controlIndex].radius);
+        //}
+
+        std::vector<glm::vec3> ring = GenerateRingWithFrame(points[i], tangent, right, up, lerpedRadius);
         for (const glm::vec3& p : ring) {
+            glm::vec3 normal = normalize(points[i] - p);
             positions.push_back(p.x);
             positions.push_back(p.y);
             positions.push_back(p.z);
+
+            normals.push_back(normal.x);
+            normals.push_back(normal.y);
+            normals.push_back(normal.z);
+        }
+
+        numVertsForCurrentControl++;
+        if (numVertsForCurrentControl >= path.controls[controlIndex].GetNumBeveledVertices()) {
+            numVertsForCurrentControl = 0;
+            controlIndex++;
         }
     }
 
