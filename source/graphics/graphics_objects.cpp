@@ -458,11 +458,13 @@ int LinePath::Extrude(int controlIndex, glm::vec3 to) {
 
     if (controlIndex > 0) {
         Control s = {origin + (vectorLength * axis)};
+        controls[controls.size() - 1].bevelNumber = 1;
         controls.push_back(s);
         return controls.size() - 1;
     }
 
     Control s = {origin + (vectorLength * axis)};
+    controls[0].bevelNumber = 1;
     controls.insert(controls.begin(), s);
     return 0;
 }

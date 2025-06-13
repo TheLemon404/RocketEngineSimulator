@@ -217,7 +217,7 @@ void GraphicsPipeline::DrawDebugSphere3D(glm::vec3 center, float radius, glm::ve
     glTranslatef(center.x, center.y, center.z);
     glScalef(radius, radius, radius);
 
-    glColor3f(color.r, color.g, color.b); // Yellow wireframe
+    glColor3f(color.r, color.g, color.b);
 
     // Draw latitude lines (horizontal rings)
     for (int i = 0; i < rings; i++) {
@@ -242,6 +242,33 @@ void GraphicsPipeline::DrawDebugSphere3D(glm::vec3 center, float radius, glm::ve
         }
         glEnd();
     }
+
+    glPopMatrix(); // Restore modelview
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix(); // Restore projection
+    glMatrixMode(GL_MODELVIEW);
+}
+
+void GraphicsPipeline::DrawDebugLine3D(glm::vec3 p1, glm::vec3 p2, glm::vec3 color, Camera camera) {
+    //calculate matricies
+    glm::mat4 view = glm::lookAt(camera.position, camera.target, camera.up);
+    glm::mat4 projection = glm::perspective(glm::radians(camera.fov), ((float)p_window->GetWindowDimentions().x / (float)p_window->GetWindowDimentions().y), 0.001f, 10000.0f);
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadMatrixf(glm::value_ptr(projection));
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadMatrixf(glm::value_ptr(view));
+
+    glColor3f(color.r, color.g, color.b);
+
+    glBegin(GL_LINES);
+    glVertex3f(p1.x, p1.y, p1.z);
+    glVertex3f(p2.x, p2.y, p2.z);
+    glEnd();
 
     glPopMatrix(); // Restore modelview
 
@@ -345,7 +372,7 @@ void GraphicsPipeline::RenderPipe(Pipe &pipe, glm::mat4 view, glm::mat4 projecti
     m_pipeProgram->UploadUniformMat4("transform", glm::identity<glm::mat4>());
     m_pipeProgram->UploadUniformVec3("lightColor", glm::vec3(0.5f, 0.8f, 1.0f));
     m_pipeProgram->UploadUniformVec3("darkColor", glm::vec3(0.2f, 0.2f, 0.3f));
-    m_pipeProgram->UploadUniformVec3("fresnelColor", glm::vec3(1.0f));
+    m_pipeProgram->UploadUniformVec3("fresnelColor", glm::vec3(0.7f, 0.7f, 0.9f));
     m_pipeProgram->UploadUniformVec3("lightDirection", glm::vec3(0, -1, 0));
     m_pipeProgram->UploadUniformVec3("viewDirection", normalize(camera.target - camera.position));
     pipe.vao->Bind();
@@ -409,25 +436,26 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
         }
     }
 
-    glm::vec3 origin;
     if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS && m_currentSelectedControlIndex != -1) {
         if (Input::IsKeyJustReleased(GLFW_KEY_LEFT_SHIFT)) {
-            origin = scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position;
+            m_origin = scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position;
         }
         if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] != GLFW_RELEASE) {
             if (m_isLineSelected) {
-                glm::vec3 delta = worldPos - origin;
-                glm::vec3 axis = LinePath::RoundToMajorAxis(abs(glm::normalize(worldPos - origin)));
-                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position = origin + (delta * axis);
+                glm::vec3 delta = worldPos - m_origin;
+                glm::vec3 axis = LinePath::RoundToMajorAxis(abs(glm::normalize(worldPos - m_origin)));
+                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position = m_origin + (delta * axis);
 
                 scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
                 if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
                 if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
             }
             else {
-                float delta = glm::distance(worldPos, origin);
-                glm::vec3 axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - origin));
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = (delta * axis);
+                float delta = glm::distance(worldPos, m_origin);
+                glm::vec3 axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - m_origin));
+                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = m_origin + (delta * axis);
+
+                DrawDebugLine3D(-1000.0f * axis, 1000.0f * axis, abs(axis), scene.camera);
 
                 scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
                 if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
@@ -456,14 +484,14 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
         if (m_isLineSelected) {
             if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.linePaths[m_currentSelectedLinePathIndex].controls.size()) {
                 scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber += Input::mouseScrollVector.y;
-                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber = std::clamp(scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber, 0, 4);
+                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber = std::clamp(scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber, 0, 3);
                 scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
             }
         }
         else {
             if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.pipes[m_currentSelectedPipeIndex].path.controls.size()) {
                 scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber += Input::mouseScrollVector.y;
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber = std::clamp(scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber, 0, 4);
+                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber = std::clamp(scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber, 0, 3);
                 scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
             }
         }

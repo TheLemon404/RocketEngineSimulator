@@ -20,6 +20,6 @@ float fresnel(float amount)
 
 void main() {
     float dot = clamp(dot(passNormal, lightDirection), 0, 1);
-    vec3 finalColor = mix(mix(darkColor, lightColor, dot), fresnelColor, fresnel(3.0));
+    vec3 finalColor = mix(mix(darkColor, lightColor, dot), fresnelColor, fresnel(1.0));
     outColor = vec4(finalColor, 1.0);
 }

@@ -58,6 +58,9 @@ class GraphicsPipeline {
     int m_currentSelectedLinePathIndex = -1;
     int m_currentSelectedPipeIndex = -1;
 
+    //constant state needed for modeling
+    glm::vec3 m_origin;
+
 
 public:
     GraphicsPipeline(Window* window);
@@ -74,6 +77,7 @@ public:
 
     //immediate-mode drawing
     void DrawDebugSphere3D(glm::vec3 center, float radius, glm::vec3 color, Camera camera);
+    void DrawDebugLine3D(glm::vec3 p1, glm::vec3 p2, glm::vec3 color, Camera camera);
     void DrawDebugCircle2D(glm::vec2 center, float radius, glm::vec3 color);
     void DrawLinePathGizmos(LinePath linePath, Camera camera);
 
