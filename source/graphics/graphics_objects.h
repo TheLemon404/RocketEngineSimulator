@@ -18,11 +18,6 @@
 
 #endif //GRAPHICS_OBJECTS_H
 
-enum MeshRenderMode {
-    NORMAL,
-    UNLIT
-};
-
 struct Mesh;
 
 enum CameraProjectionMode {
@@ -179,8 +174,6 @@ struct TextureObject {
 struct Mesh {
     unsigned int id = rand();
 
-    MeshRenderMode renderMode = NORMAL;
-
     static Mesh LoadmeshFromOBJ(std::string localPath, int meshIndex = 0);
 
     void UpdateBuffers();
@@ -203,12 +196,8 @@ struct Mesh {
 
 struct Scene {
     std::vector<Mesh> meshes;
-    std::vector<LinePath> linePaths;
     std::vector<Pipe> pipes;
     Camera camera;
-
-    Mesh* GetMeshFromID(unsigned int id) { for (int i = 0; i < meshes.size(); i++) if (meshes[i].id == id) return &meshes[i]; };
-    LinePath* GetLinePathFromID(unsigned int id) { for (int i = 0; i < linePaths.size(); i++) if (linePaths[i].id == id) return &linePaths[i]; };
 
     void CleanUp();
 };

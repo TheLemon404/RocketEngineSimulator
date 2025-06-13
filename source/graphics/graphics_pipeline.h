@@ -83,7 +83,7 @@ public:
     void UpdateGeometry(Scene& scene);
 
     //rendering
-    void RenderMesh(Mesh& mesh, glm::mat4 view, glm::mat4 projection);
+    void RenderMesh(Mesh& mesh, glm::mat4 view, glm::mat4 projection, Camera camera);
     void RenderLinePath(LinePath& linePath, glm::mat4 view, glm::mat4 projection);
     void RenderPipe(Pipe& pipe, glm::mat4 view, glm::mat4 projection, Camera camera);
     void RenderScene(Scene& scene);

@@ -175,20 +175,12 @@ void GraphicsPipeline::RegisterScene(Scene& scene) {
     for (int i = 0; i < scene.meshes.size(); i++) {
         RegisterMesh(scene.meshes[i]);
     }
-    for (int i = 0; i < scene.linePaths.size(); i++) {
-        RegisterLinePath(scene.linePaths[i]);
-    }
     for (int i = 0; i < scene.pipes.size(); i++) {
         RegisterPipe(scene.pipes[i]);
     }
 }
 
 void GraphicsPipeline::ClearSelection(Scene& scene) {
-    for (int i = 0; i < scene.linePaths.size(); i++) {
-        for (int j = 0; j < scene.linePaths[i].controls.size(); j++) {
-            scene.linePaths[i].controls[j].selected = false;
-        }
-    }
     for (int i = 0; i < scene.pipes.size(); i++) {
         for (int j = 0; j < scene.pipes[i].path.controls.size(); j++) {
             scene.pipes[i].path.controls[j].selected = false;
@@ -320,18 +312,8 @@ void GraphicsPipeline::DrawLinePathGizmos(LinePath linePath, Camera camera) {
     glEnable(GL_DEPTH_TEST);
 }
 
-void GraphicsPipeline::RenderMesh(Mesh& mesh, glm::mat4 view, glm::mat4 projection) {
-    //draw
-    switch (mesh.renderMode) {
-        case NORMAL:
-            m_normalProgram->Use();
-            break;
-        case UNLIT:
-            m_unlitProgram->Use();
-            break;
-        default:
-            break;
-    }
+void GraphicsPipeline::RenderMesh(Mesh& mesh, glm::mat4 view, glm::mat4 projection, Camera camera) {
+    m_pipeProgram->Use();
 
     glm::mat4 transform = glm::identity<glm::mat4>();
     transform = glm::scale(transform, mesh.scale);
@@ -340,15 +322,19 @@ void GraphicsPipeline::RenderMesh(Mesh& mesh, glm::mat4 view, glm::mat4 projecti
     transform = glm::rotate(transform, mesh.rotation.z, glm::vec3(0, 0, 1));
     transform = glm::translate(transform, mesh.position);
 
-    m_unlitProgram->UploadUniformMat4("projection", projection);
-    m_unlitProgram->UploadUniformMat4("view", view);
-    m_unlitProgram->UploadUniformMat4("transform", transform);
+    m_pipeProgram->UploadUniformMat4("projection", projection);
+    m_pipeProgram->UploadUniformMat4("view", view);
+    m_pipeProgram->UploadUniformMat4("transform", transform);
+    m_pipeProgram->UploadUniformVec3("lightColor", glm::vec3(0.5f, 0.8f, 1.0f));
+    m_pipeProgram->UploadUniformVec3("darkColor", glm::vec3(0.2f, 0.2f, 0.3f));
+    m_pipeProgram->UploadUniformVec3("fresnelColor", glm::vec3(0.7f, 0.7f, 0.9f));
+    m_pipeProgram->UploadUniformVec3("lightDirection", glm::vec3(0, -1, 0));
+    m_pipeProgram->UploadUniformVec3("viewDirection", normalize(camera.target - camera.position));
 
     mesh.vao->Bind();
     glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
     mesh.vao->Unbind();
 
-    //stop using any shader program
     glUseProgram(0);
 }
 
@@ -376,7 +362,6 @@ void GraphicsPipeline::RenderPipe(Pipe &pipe, glm::mat4 view, glm::mat4 projecti
     m_pipeProgram->UploadUniformVec3("lightDirection", glm::vec3(0, -1, 0));
     m_pipeProgram->UploadUniformVec3("viewDirection", normalize(camera.target - camera.position));
     pipe.vao->Bind();
-    //glDrawArrays(GL_LINE_STRIP, 0, pipe.positions.size() / 3);
     glDrawElements(GL_TRIANGLES, pipe.indices.size(), GL_UNSIGNED_INT, 0);
     pipe.vao->Unbind();
     glUseProgram(0);
@@ -414,10 +399,11 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
     worldPos = rayOrigin + t * rayDir;
 
     //manage gizmo selection and linePath manipulation
-    if (Input::IsMouseButtonJustPressed(GLFW_MOUSE_BUTTON_1)) {
+    if (Input::IsMouseButtonJustPressed(GLFW_MOUSE_BUTTON_1) && m_currentSelectedControlIndex != -1) {
         for (int i = 0; i < scene.pipes.size(); i++) {
-            int check = scene.pipes[i].path.GetSelectedControlIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
-            if(check != -1) {
+            m_currentSelectedControlIndex = scene.pipes[i].path.GetSelectedControlIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
+            if(m_currentSelectedControlIndex != -1) {
+                m_currentSelectedPipeIndex = i;
                 return;
             }
         }
@@ -520,15 +506,10 @@ void GraphicsPipeline::RenderScene(Scene& scene) {
 
     //render meshes in scene
     for (int i = 0; i < scene.meshes.size(); i++) {
-        RenderMesh(scene.meshes[i], view, projection);
+        RenderMesh(scene.meshes[i], view, projection, scene.camera);
     }
 
-    //render linePaths in scene
-    for (int i = 0; i < scene.linePaths.size(); i++) {
-        RenderLinePath(scene.linePaths[i], view, projection);
-        DrawLinePathGizmos(scene.linePaths[i], scene.camera);
-    }
-
+    //render pipes in scene
     for (int i = 0; i < scene.pipes.size(); i++) {
         RenderPipe(scene.pipes[i], view, projection, scene.camera);
         DrawLinePathGizmos(scene.pipes[i].path, scene.camera);

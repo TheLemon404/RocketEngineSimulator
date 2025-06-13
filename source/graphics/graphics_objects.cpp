@@ -302,10 +302,6 @@ void Scene::CleanUp() {
         meshes[i].normalsBuffer->CleanUp();
         meshes[i].indicesBuffer->CleanUp();
     }
-    for (int i = 0; i < linePaths.size(); i++) {
-        linePaths[i].vao->CleanUp();
-        linePaths[i].positionsBuffer->CleanUp();
-    }
 }
 
 std::vector<glm::vec3> Control::RecursiveBevel(glm::vec3 a, glm::vec3 v, glm::vec3 b, float distance, int currentDepth) {
@@ -572,7 +568,7 @@ void Pipe::UpdateArrays() {
 
         std::vector<glm::vec3> ring = GenerateRingWithFrame(points[i], tangent, right, up, path.controls[controlIndex].radius);
         for (const glm::vec3& p : ring) {
-            glm::vec3 normal = normalize(points[i] - p);
+            glm::vec3 normal = normalize(p - points[i]);
             positions.push_back(p.x);
             positions.push_back(p.y);
             positions.push_back(p.z);
