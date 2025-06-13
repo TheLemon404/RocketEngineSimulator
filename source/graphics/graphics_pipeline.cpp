@@ -434,43 +434,45 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
         m_axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - m_origin));
     }
 
-    if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS && m_currentSelectedControlIndex != -1) {
-        if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] != GLFW_RELEASE || Input::keyStates[GLFW_KEY_LEFT_CONTROL] != GLFW_RELEASE) {
-            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = m_origin + (delta * m_axis);
+    if (m_currentSelectedControlIndex != -1) {
+        if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS) {
+            if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] != GLFW_RELEASE || Input::keyStates[GLFW_KEY_LEFT_CONTROL] != GLFW_RELEASE) {
+                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = m_origin + (delta * m_axis);
+                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
+            }
+            else {
+                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = worldPos;
+                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
+            }
+        }
+
+        if ((Input::keyStates[GLFW_KEY_B] == GLFW_PRESS || Input::keyStates[GLFW_KEY_B] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0) {
+            if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.pipes[m_currentSelectedPipeIndex].path.controls.size()) {
+                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber += Input::mouseScrollVector.y;
+                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber = std::clamp(scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber, 0, 3);
+                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
+            }
+        }
+
+        if ((Input::keyStates[GLFW_KEY_R] == GLFW_PRESS || Input::keyStates[GLFW_KEY_R] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0) {
+            if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.pipes[m_currentSelectedPipeIndex].path.controls.size()) {
+                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelRadius += Input::mouseScrollVector.y / 100.0f;
+                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
+            }
+        }
+
+        if ((Input::keyStates[GLFW_KEY_S] == GLFW_PRESS || Input::keyStates[GLFW_KEY_S] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0) {
+            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].radius += Input::mouseScrollVector.y / 100.0f;
             scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
         }
-        else {
-            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = worldPos;
+
+        if (Input::IsKeyJustReleased(GLFW_KEY_E)) {
+            int newSelectedControl = scene.pipes[m_currentSelectedPipeIndex].path.Extrude(m_currentSelectedControlIndex, worldPos);
             scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
+            ClearSelection(scene);
+            m_currentSelectedControlIndex = newSelectedControl;
+            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].selected = true;
         }
-    }
-
-    if ((Input::keyStates[GLFW_KEY_B] == GLFW_PRESS || Input::keyStates[GLFW_KEY_B] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0 && m_currentSelectedControlIndex != -1) {
-        if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.pipes[m_currentSelectedPipeIndex].path.controls.size()) {
-            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber += Input::mouseScrollVector.y;
-            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber = std::clamp(scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber, 0, 3);
-            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
-        }
-    }
-
-    if ((Input::keyStates[GLFW_KEY_R] == GLFW_PRESS || Input::keyStates[GLFW_KEY_R] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0 && m_currentSelectedControlIndex != -1) {
-        if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.pipes[m_currentSelectedPipeIndex].path.controls.size()) {
-            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelRadius += Input::mouseScrollVector.y / 100.0f;
-            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
-        }
-    }
-
-    if ((Input::keyStates[GLFW_KEY_S] == GLFW_PRESS || Input::keyStates[GLFW_KEY_S] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0 && m_currentSelectedControlIndex != -1) {
-        scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].radius += Input::mouseScrollVector.y / 100.0f;
-        scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
-    }
-
-    if (Input::IsKeyJustReleased(GLFW_KEY_E) && m_currentSelectedControlIndex != -1) {
-        int newSelectedControl = scene.pipes[m_currentSelectedPipeIndex].path.Extrude(m_currentSelectedControlIndex, worldPos);
-        scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
-        ClearSelection(scene);
-        m_currentSelectedControlIndex = newSelectedControl;
-        scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].selected = true;
     }
 }
 
@@ -545,9 +547,11 @@ void GraphicsPipeline::DrawUI(Scene& scene) {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     //vertex locked axis
-    if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_REPEAT) {
-        DrawDebugLine3D(m_origin + (-100.0f * m_axis), m_origin + (100.0f * m_axis), abs(m_axis), scene.camera);
-        DrawDebugSphere3D(m_origin, 0.15f, abs(m_axis), scene.camera);
+    if (m_currentSelectedControlIndex != -1) {
+        if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_REPEAT) {
+            DrawDebugLine3D(m_origin + (-100.0f * m_axis), m_origin + (100.0f * m_axis), abs(m_axis), scene.camera);
+            DrawDebugSphere3D(m_origin, 0.15f, abs(m_axis), scene.camera);
+        }
     }
 
     glfwSwapBuffers(p_window->GetGLFWWindow());
