@@ -425,25 +425,21 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
         }
     }
 
+    if (Input::IsKeyJustPressed(GLFW_KEY_LEFT_SHIFT)) {
+        m_origin = scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position;
+    }
+    if (Input::IsKeyJustPressed(GLFW_KEY_LEFT_CONTROL)) {
+        m_origin = glm::vec3(0.0, 0.0, 0.0);
+    }
+
+    float delta = glm::distance(worldPos, m_origin);
+    if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] != GLFW_RELEASE || Input::keyStates[GLFW_KEY_LEFT_CONTROL] != GLFW_RELEASE) {
+        m_axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - m_origin));
+    }
+
     if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS && m_currentSelectedControlIndex != -1) {
-        if (Input::IsKeyJustPressed(GLFW_KEY_LEFT_SHIFT)) {
-            m_origin = scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position;
-        }
-        else if (Input::IsKeyJustPressed(GLFW_KEY_RIGHT_SHIFT)) {
-            m_origin = glm::vec3(0);
-        }
-        if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] != GLFW_RELEASE) {
-            float delta = glm::distance(worldPos, m_origin);
-            m_axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - m_origin));
+        if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] != GLFW_RELEASE || Input::keyStates[GLFW_KEY_LEFT_CONTROL] != GLFW_RELEASE) {
             scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = m_origin + (delta * m_axis);
-
-            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
-        }
-        else if (Input::keyStates[GLFW_KEY_LEFT_CONTROL] != GLFW_RELEASE) {
-            float delta = glm::distance(worldPos, m_origin);
-            m_axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - m_origin));
-            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = (delta * m_axis);
-
             scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
         }
         else {
@@ -559,6 +555,7 @@ void GraphicsPipeline::DrawUI(Scene& scene) {
     //vertex locked axis
     if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_REPEAT) {
         DrawDebugLine3D(m_origin + (-100.0f * m_axis), m_origin + (100.0f * m_axis), abs(m_axis), scene.camera);
+        DrawDebugSphere3D(m_origin, 0.15f, abs(m_axis), scene.camera);
     }
 
     glfwSwapBuffers(p_window->GetGLFWWindow());
