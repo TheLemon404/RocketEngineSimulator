@@ -390,9 +390,7 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
 
     //calculate world space mouse position for object moving
     glm::vec3 planeNormal = glm::normalize(scene.camera.target - scene.camera.position);
-    glm::vec3 planePosition;
-    if (m_isLineSelected) planePosition = m_currentSelectedControlIndex != -1 ? scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position : glm::vec3(0.0);
-    else planePosition = m_currentSelectedControlIndex != -1 ? scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position : glm::vec3(0.0);
+    glm::vec3 planePosition = m_currentSelectedControlIndex != -1 ? scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position : glm::vec3(0.0);
     glm::vec2 ndc = glm::vec2((2.0f * Input::mousePosition.x) / p_window->GetWindowDimentions().x - 1.0f, 1.0f - (2.0 * Input::mousePosition.y) / p_window->GetWindowDimentions().y);
     glm::mat4 inverseViewProjectionMatrix = glm::inverse(projection * view);
     glm::vec4 nearClip = {ndc.x, ndc.y, -1.0f, 1.0f};
@@ -422,15 +420,6 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
             m_currentSelectedControlIndex = scene.pipes[i].path.GetSelectedControlIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
             if(m_currentSelectedControlIndex != -1) {
                 m_currentSelectedPipeIndex = i;
-                m_isLineSelected = false;
-                return;
-            }
-        }
-        for (int i = 0; i < scene.linePaths.size(); i++) {
-            m_currentSelectedControlIndex = scene.linePaths[i].GetSelectedControlIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
-            if(m_currentSelectedControlIndex != -1) {
-                m_currentSelectedLinePathIndex = i;
-                m_isLineSelected = true;
                 return;
             }
         }
@@ -444,117 +433,51 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
             m_origin = glm::vec3(0);
         }
         if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] != GLFW_RELEASE) {
-            if (m_isLineSelected) {
-                glm::vec3 delta = worldPos - m_origin;
-                m_axis = LinePath::RoundToMajorAxis(abs(glm::normalize(worldPos - m_origin)));
-                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position = m_origin + (delta * m_axis);
+            float delta = glm::distance(worldPos, m_origin);
+            m_axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - m_origin));
+            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = m_origin + (delta * m_axis);
 
-                scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
-            }
-            else {
-                float delta = glm::distance(worldPos, m_origin);
-                m_axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - m_origin));
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = m_origin + (delta * m_axis);
-
-                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
-            }
+            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
         }
         else if (Input::keyStates[GLFW_KEY_LEFT_CONTROL] != GLFW_RELEASE) {
-            if (m_isLineSelected) {
-                glm::vec3 delta = worldPos - m_origin;
-                m_axis = LinePath::RoundToMajorAxis(abs(glm::normalize(worldPos - m_origin)));
-                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position = (delta * m_axis);
+            float delta = glm::distance(worldPos, m_origin);
+            m_axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - m_origin));
+            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = (delta * m_axis);
 
-                scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
-            }
-            else {
-                float delta = glm::distance(worldPos, m_origin);
-                m_axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - m_origin));
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = (delta * m_axis);
-
-                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
-            }
+            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
         }
         else {
-            if (m_isLineSelected) {
-                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position = worldPos;
-
-                scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
-            }
-            else {
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = worldPos;
-
-                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
-                if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
-            }
+            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = worldPos;
+            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
         }
     }
 
     if ((Input::keyStates[GLFW_KEY_B] == GLFW_PRESS || Input::keyStates[GLFW_KEY_B] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0 && m_currentSelectedControlIndex != -1) {
-        if (m_isLineSelected) {
-            if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.linePaths[m_currentSelectedLinePathIndex].controls.size()) {
-                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber += Input::mouseScrollVector.y;
-                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber = std::clamp(scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelNumber, 0, 3);
-                scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
-            }
-        }
-        else {
-            if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.pipes[m_currentSelectedPipeIndex].path.controls.size()) {
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber += Input::mouseScrollVector.y;
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber = std::clamp(scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber, 0, 3);
-                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
-            }
+        if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.pipes[m_currentSelectedPipeIndex].path.controls.size()) {
+            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber += Input::mouseScrollVector.y;
+            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber = std::clamp(scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber, 0, 3);
+            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
         }
     }
 
     if ((Input::keyStates[GLFW_KEY_R] == GLFW_PRESS || Input::keyStates[GLFW_KEY_R] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0 && m_currentSelectedControlIndex != -1) {
-        if (m_isLineSelected) {
-            if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.linePaths[m_currentSelectedLinePathIndex].controls.size()) {
-                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].bevelRadius += Input::mouseScrollVector.y / 100.0f;
-                scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
-            }
-        }
-        else {
-            if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.pipes[m_currentSelectedPipeIndex].path.controls.size()) {
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelRadius += Input::mouseScrollVector.y / 100.0f;
-                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
-            }
+        if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.pipes[m_currentSelectedPipeIndex].path.controls.size()) {
+            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelRadius += Input::mouseScrollVector.y / 100.0f;
+            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
         }
     }
 
     if ((Input::keyStates[GLFW_KEY_S] == GLFW_PRESS || Input::keyStates[GLFW_KEY_S] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0 && m_currentSelectedControlIndex != -1) {
-        if (!m_isLineSelected) {
-            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].radius += Input::mouseScrollVector.y / 100.0f;
-            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
-        }
+        scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].radius += Input::mouseScrollVector.y / 100.0f;
+        scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
     }
 
     if (Input::IsKeyJustReleased(GLFW_KEY_E) && m_currentSelectedControlIndex != -1) {
-        if (m_isLineSelected) {
-            int newSelectedControl = scene.linePaths[m_currentSelectedLinePathIndex].Extrude(m_currentSelectedControlIndex, worldPos);
-            scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
-            ClearSelection(scene);
-            m_currentSelectedControlIndex = newSelectedControl;
-            scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].selected = true;
-        }
-        else {
-            int newSelectedControl = scene.pipes[m_currentSelectedPipeIndex].path.Extrude(m_currentSelectedControlIndex, worldPos);
-            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
-            ClearSelection(scene);
-            m_currentSelectedControlIndex = newSelectedControl;
-            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].selected = true;
-        }
+        int newSelectedControl = scene.pipes[m_currentSelectedPipeIndex].path.Extrude(m_currentSelectedControlIndex, worldPos);
+        scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
+        ClearSelection(scene);
+        m_currentSelectedControlIndex = newSelectedControl;
+        scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].selected = true;
     }
 }
 

@@ -53,9 +53,7 @@ class GraphicsPipeline {
     BufferObject<unsigned int>* m_quadIndices;
 
     //for selecting gizmos
-    bool m_isLineSelected = false;
     int m_currentSelectedControlIndex = -1;
-    int m_currentSelectedLinePathIndex = -1;
     int m_currentSelectedPipeIndex = -1;
 
     //constant state needed for modeling
