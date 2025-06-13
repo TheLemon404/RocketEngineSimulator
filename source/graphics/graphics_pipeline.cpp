@@ -415,7 +415,16 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
 
     //manage gizmo selection and linePath manipulation
     if (Input::IsMouseButtonJustPressed(GLFW_MOUSE_BUTTON_1)) {
+        for (int i = 0; i < scene.pipes.size(); i++) {
+            int check = scene.pipes[i].path.GetSelectedControlIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
+            if(check != -1) {
+                return;
+            }
+        }
+
         ClearSelection(scene);
+    }
+    if (Input::IsMouseButtonJustReleased(GLFW_MOUSE_BUTTON_1)) {
         for (int i = 0; i < scene.pipes.size(); i++) {
             m_currentSelectedControlIndex = scene.pipes[i].path.GetSelectedControlIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
             if(m_currentSelectedControlIndex != -1) {
@@ -423,6 +432,8 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
                 return;
             }
         }
+
+        ClearSelection(scene);
     }
 
     if (Input::IsKeyJustPressed(GLFW_KEY_LEFT_SHIFT)) {
