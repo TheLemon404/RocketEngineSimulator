@@ -62,7 +62,6 @@ class GraphicsPipeline {
     glm::vec3 m_origin;
     glm::vec3 m_axis;
 
-
 public:
     GraphicsPipeline(Window* window);
 

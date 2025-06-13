@@ -437,8 +437,11 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
     }
 
     if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS && m_currentSelectedControlIndex != -1) {
-        if (Input::IsKeyJustReleased(GLFW_KEY_LEFT_SHIFT)) {
+        if (Input::IsKeyJustPressed(GLFW_KEY_LEFT_SHIFT)) {
             m_origin = scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position;
+        }
+        else if (Input::IsKeyJustPressed(GLFW_KEY_RIGHT_SHIFT)) {
+            m_origin = glm::vec3(0);
         }
         if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] != GLFW_RELEASE) {
             if (m_isLineSelected) {
@@ -454,6 +457,26 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
                 float delta = glm::distance(worldPos, m_origin);
                 m_axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - m_origin));
                 scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = m_origin + (delta * m_axis);
+
+                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
+                if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
+                if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
+            }
+        }
+        else if (Input::keyStates[GLFW_KEY_LEFT_CONTROL] != GLFW_RELEASE) {
+            if (m_isLineSelected) {
+                glm::vec3 delta = worldPos - m_origin;
+                m_axis = LinePath::RoundToMajorAxis(abs(glm::normalize(worldPos - m_origin)));
+                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position = (delta * m_axis);
+
+                scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
+                if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
+                if (m_currentSelectedLinePathIndex + 1 < scene.linePaths.size()) scene.linePaths[m_currentSelectedLinePathIndex + 1].UpdatePositionsBuffer();
+            }
+            else {
+                float delta = glm::distance(worldPos, m_origin);
+                m_axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - m_origin));
+                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = (delta * m_axis);
 
                 scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
                 if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
@@ -588,21 +611,31 @@ void GraphicsPipeline::DrawUI(Scene& scene) {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    //orientation guizmo
+    //orientation guizmo and ui
     glm::mat4 view;
     view = glm::lookAt(scene.camera.position, scene.camera.target, scene.camera.up);
     ImOGuizmo::SetRect(p_window->GetWindowDimentions().x - 150, 60, 100.0f);
     ImOGuizmo::BeginFrame();
+
     glm::mat4 projection = glm::perspective(glm::radians(scene.camera.fov), (float)p_window->GetWindowDimentions().y/p_window->GetWindowDimentions().x, 0.001f, 10000.0f);
     if (!ImOGuizmo::DrawGizmo((float*)&view, (float*)&projection)){
         //maybe implement something here later
     }
+
+    ImGui::Begin("Info");
+    ImGui::Text("Press E to extrude");
+    ImGui::Text("Press S and scroll to scale");
+    ImGui::Text("Press R and scroll to edit bevel radius");
+    ImGui::Text("Press B and scroll to edit bevel number");
+    ImGui::Text("Hold shift while dragging a node to lock its motion axis");
+    ImGui::End();
+
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     //vertex locked axis
-    if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT) {
-        DrawDebugLine3D(-10.0f * m_axis, 10.0f * m_axis, abs(m_axis), scene.camera);
+    if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_REPEAT) {
+        DrawDebugLine3D(m_origin + (-100.0f * m_axis), m_origin + (100.0f * m_axis), abs(m_axis), scene.camera);
     }
 
     glfwSwapBuffers(p_window->GetGLFWWindow());

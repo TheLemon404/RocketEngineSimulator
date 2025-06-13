@@ -372,7 +372,7 @@ void Control::CheckSelection(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 
     glm::vec3 ndcPos = glm::vec3(clipPosition.x / clipPosition.w, clipPosition.y / clipPosition.w, clipPosition.z / clipPosition.w);
     glm::vec2 screenCoords = glm::ivec2((ndcPos.x + 1.0f) * 0.5f * screenResolution.x, (1.0f - ndcPos.y) * 0.5f * screenResolution.y);
 
-    if (glm::distance(screenCoords, mousePosition) < 20.0f) {
+    if (glm::distance(screenCoords, mousePosition) < radius * 100.0f) {
         selected = true;
     }
     else {
