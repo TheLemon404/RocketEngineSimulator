@@ -443,8 +443,8 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
         if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] != GLFW_RELEASE) {
             if (m_isLineSelected) {
                 glm::vec3 delta = worldPos - m_origin;
-                glm::vec3 axis = LinePath::RoundToMajorAxis(abs(glm::normalize(worldPos - m_origin)));
-                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position = m_origin + (delta * axis);
+                m_axis = LinePath::RoundToMajorAxis(abs(glm::normalize(worldPos - m_origin)));
+                scene.linePaths[m_currentSelectedLinePathIndex].controls[m_currentSelectedControlIndex].position = m_origin + (delta * m_axis);
 
                 scene.linePaths[m_currentSelectedLinePathIndex].UpdatePositionsBuffer();
                 if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
@@ -452,10 +452,8 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
             }
             else {
                 float delta = glm::distance(worldPos, m_origin);
-                glm::vec3 axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - m_origin));
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = m_origin + (delta * axis);
-
-                DrawDebugLine3D(-1000.0f * axis, 1000.0f * axis, abs(axis), scene.camera);
+                m_axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - m_origin));
+                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = m_origin + (delta * m_axis);
 
                 scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
                 if (m_currentSelectedLinePathIndex - 1 >= 0) scene.linePaths[m_currentSelectedLinePathIndex - 1].UpdatePositionsBuffer();
@@ -601,6 +599,11 @@ void GraphicsPipeline::DrawUI(Scene& scene) {
     }
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    //vertex locked axis
+    if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT) {
+        DrawDebugLine3D(-10.0f * m_axis, 10.0f * m_axis, abs(m_axis), scene.camera);
+    }
 
     glfwSwapBuffers(p_window->GetGLFWWindow());
 }

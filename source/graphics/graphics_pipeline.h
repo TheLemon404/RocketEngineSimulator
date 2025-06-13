@@ -60,6 +60,7 @@ class GraphicsPipeline {
 
     //constant state needed for modeling
     glm::vec3 m_origin;
+    glm::vec3 m_axis;
 
 
 public:
