@@ -23,7 +23,7 @@ void Application::Initialize() {
     scene.camera = {};
 
     scene.meshes.push_back(Mesh::LoadmeshFromOBJ("resources/meshes/monkey_smooth.obj"));
-    scene.meshes[0].position.x = 2.0f;
+    scene.meshes[0].position.y = 2.0f;
 
     scene.pipes.push_back({{{
             glm::vec3(-1.0f, 0.0f, -1.0f),
@@ -33,11 +33,8 @@ void Application::Initialize() {
     m_graphicsPipeline->RegisterScene(scene);
 }
 
-void Application::Run() {
-    while (!m_window->ShouldClose()) {
-        m_window->Poll();
-
-        //update camera position
+void Application::MoveCamera() {
+    //update camera position
         glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
         glm::vec3 cameraForward = glm::normalize(scene.camera.target - scene.camera.position);
         glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraForward));
@@ -65,8 +62,16 @@ void Application::Run() {
             scene.camera.zoomFactor += (-Input::mouseScrollVector.y / 1000.0f);
             scene.camera.zoomFactor = glm::clamp(scene.camera.zoomFactor, 0.000001f, 1000000.0f);
         }
+}
+
+void Application::Run() {
+    while (!m_window->ShouldClose()) {
+        m_window->Poll();
+
+        MoveCamera();
 
         //drawing
+        m_graphicsPipeline->StepSimulation(scene);
         m_graphicsPipeline->UpdateGeometry(scene);
         m_graphicsPipeline->RenderScene(scene);
         m_graphicsPipeline->DrawUI(scene);

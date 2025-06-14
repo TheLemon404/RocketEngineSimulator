@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "../simulation/gas_simulation.h"
 #include "glm/mat4x4.hpp"
 #include "glm/vec2.hpp"
 #include "glm/vec3.hpp"
@@ -137,8 +138,9 @@ struct LinePath {
 struct Pipe {
     unsigned int id = rand();
     LinePath path;
+    GasSimulation gasSimulation;
 
-    Pipe(LinePath path) : path(path) {};
+    Pipe(LinePath path) : path(path), gasSimulation() {};
 
     int segments = 32;
 

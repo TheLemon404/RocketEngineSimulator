@@ -8,21 +8,36 @@
 #define GAS_SIMULATION_H
 #include <vector>
 
-#include "../graphics/graphics_objects.h"
+#include "glm/vec3.hpp"
 
 #endif //GAS_SIMULATION_H
 
 struct GasRegion {
-    float radius;
-    float width;
+    float size = 0;
+    float density = 1.0f;
+    float velocity = 0.0f;
+    float pressure = 1.0f;
+    float energy = 0.0f;
+    glm::vec3 conservatives;
+    glm::vec3 flux;
+    glm::vec3 previousFluxHalf = glm::vec3(1.0f);
+    GasRegion(float size) : size(size) {};
 };
 
 class GasSimulation {
-private:
-    Pipe& m_pipe;
+    int resolution = 32;
+;
+    glm::vec3 RiemannSolver(glm::vec3 ul, glm::vec3 ur);
+    void ComputeState();
+    void UpdatePrimatives();
 
 public:
-    std::pmr::vector<GasRegion> regions;
+    std::vector<GasRegion> regions;
+    std::vector<glm::vec3> fluxes;
+    float gamma = 1.4f;
+    float CFL = 0.9f;
 
-    GasSimulation(Pipe& pipe) : m_pipe(pipe) {}
+    GasSimulation(int resolution = 32);
+
+    void Step();
 };
