@@ -197,8 +197,8 @@ void GraphicsPipeline::StepSimulation(Scene &scene) {
 
 void GraphicsPipeline::DrawGasSimulation(Pipe pipe, Camera camera) {
     for (int i = 0; i < pipe.gasSimulation.regions.size(); i++) {
-        float velocityMag = fabs(pipe.gasSimulation.regions[i].velocity);
-        glm::vec3 color = glm::vec3(velocityMag, 0, 1 - velocityMag); // simple direct map
+        float velocityMag = pipe.gasSimulation.regions[i].velocity;
+        glm::vec3 color = glm::vec3(pipe.gasSimulation.regions[i].velocity, pipe.gasSimulation.regions[i].pressure, pipe.gasSimulation.regions[i].density); // simple direct map
         DrawDebugSphere3D(glm::vec3(i / 10.0f, 0, 0), 0.3f, color, camera);
     }
 }

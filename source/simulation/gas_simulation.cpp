@@ -37,14 +37,6 @@ GasSimulation::GasSimulation(int resolution) : resolution(resolution)
             regions[i].energy
         };
     }
-
-    regions[3].velocity = 15.0f;
-    regions[3].energy = regions[3].pressure / (gamma - 1.0f) + 0.5f * regions[3].density * pow(regions[3].velocity, 2);
-    regions[3].conservatives = {
-        regions[3].density,
-        regions[3].density * regions[3].velocity,
-        regions[3].energy
-    };
 }
 
 glm::vec3 GasSimulation::RiemannSolver(glm::vec3 ul, glm::vec3 ur) {
@@ -97,10 +89,15 @@ void GasSimulation::ComputeState() {
     //evaluate
     std::vector<glm::vec3> updated;
     updated.resize(regions.size());
+    updated[0] = regions[1].conservatives;
+    updated[0].y = -updated[0].y; // flip momentum
+    updated[regions.size() - 1] = regions[regions.size() - 2].conservatives;
+    updated[regions.size() - 1].y = -updated[regions.size() - 1].y;
     for (int i = 1; i < regions.size() - 1; i++) {
         updated[i] = regions[i].conservatives - (dt / regions[i].size) * (fluxes[i] - fluxes[i - 1]);
     }
-    for (int i = 1; i < regions.size() - 1; i++) {
+
+    for (int i = 0; i < regions.size(); i++) {
         regions[i].conservatives = updated[i];
     }
 }
