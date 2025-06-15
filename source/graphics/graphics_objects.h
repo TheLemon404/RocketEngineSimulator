@@ -138,9 +138,8 @@ struct LinePath {
 struct Pipe {
     unsigned int id = rand();
     LinePath path;
-    GasSimulation gasSimulation;
 
-    Pipe(LinePath path) : path(path), gasSimulation() {};
+    Pipe(LinePath path) : path(path) {};
 
     int segments = 32;
 

@@ -73,11 +73,8 @@ public:
     //selection
     void ClearSelection(Scene& scene);
 
-    //for simulation
-    void StepSimulation(Scene& scene);
-
     //immediate-mode drawing
-    void DrawGasSimulation(Pipe pipe, Camera camera);
+    void DrawGasSimulation(GasSimulation gasSimulation, Camera camera);
     void DrawDebugSphere3D(glm::vec3 center, float radius, glm::vec3 color, Camera camera);
     void DrawDebugLine3D(glm::vec3 p1, glm::vec3 p2, glm::vec3 color, Camera camera);
     void DrawDebugCircle2D(glm::vec2 center, float radius, glm::vec3 color);

@@ -39,5 +39,6 @@ public:
 
     GasSimulation(int resolution = 32);
 
+    void SetState(int regionIndex, float density, float velocity, float pressure);
     void Step();
 };

@@ -115,6 +115,18 @@ void GasSimulation::UpdatePrimatives() {
     }
 }
 
+void GasSimulation::SetState(int regionIndex, float density, float velocity, float pressure) {
+    regions[regionIndex].density = density;
+    regions[regionIndex].velocity = velocity;
+    regions[regionIndex].pressure = pressure;
+    regions[regionIndex].energy = regions[regionIndex].pressure / (gamma - 1.0f) + 0.5f * regions[regionIndex].density * pow(regions[regionIndex].velocity, 2);
+    regions[regionIndex].conservatives = {
+        regions[regionIndex].density,
+        regions[regionIndex].density * regions[regionIndex].velocity,
+        regions[regionIndex].energy
+    };
+}
+
 void GasSimulation::Step() {
     ComputeState();
     UpdatePrimatives();

@@ -189,16 +189,10 @@ void GraphicsPipeline::ClearSelection(Scene& scene) {
     m_currentSelectedControlIndex = -1;
 }
 
-void GraphicsPipeline::StepSimulation(Scene &scene) {
-    for (Pipe& pipe : scene.pipes) {
-        pipe.gasSimulation.Step();
-    }
-}
-
-void GraphicsPipeline::DrawGasSimulation(Pipe pipe, Camera camera) {
-    for (int i = 0; i < pipe.gasSimulation.regions.size(); i++) {
-        float velocityMag = pipe.gasSimulation.regions[i].velocity;
-        glm::vec3 color = glm::vec3(pipe.gasSimulation.regions[i].velocity, pipe.gasSimulation.regions[i].pressure, pipe.gasSimulation.regions[i].density); // simple direct map
+void GraphicsPipeline::DrawGasSimulation(GasSimulation gasSimulation, Camera camera) {
+    for (int i = 0; i < gasSimulation.regions.size(); i++) {
+        float velocityMag = gasSimulation.regions[i].velocity;
+        glm::vec3 color = glm::vec3(0.0f, gasSimulation.regions[i].energy, 0.0f); // simple direct map
         DrawDebugSphere3D(glm::vec3(i / 10.0f, 0, 0), 0.3f, color, camera);
     }
 }
@@ -529,7 +523,6 @@ void GraphicsPipeline::RenderScene(Scene& scene) {
     for (int i = 0; i < scene.pipes.size(); i++) {
         RenderPipe(scene.pipes[i], view, projection, scene.camera);
         DrawLinePathGizmos(scene.pipes[i].path, scene.camera);
-        DrawGasSimulation(scene.pipes[i], scene.camera);
     }
 }
 

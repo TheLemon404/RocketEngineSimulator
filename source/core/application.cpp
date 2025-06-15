@@ -70,18 +70,7 @@ void Application::Run() {
 
         MoveCamera();
 
-        if (Input::IsMouseButtonJustPressed(GLFW_MOUSE_BUTTON_1)) {
-            scene.pipes[0].gasSimulation.regions[3].velocity = 15.0f;
-            scene.pipes[0].gasSimulation.regions[3].energy = scene.pipes[0].gasSimulation.regions[3].pressure / (scene.pipes[0].gasSimulation.gamma - 1.0f) + 0.5f * scene.pipes[0].gasSimulation.regions[3].density * pow(scene.pipes[0].gasSimulation.regions[3].velocity, 2);
-            scene.pipes[0].gasSimulation.regions[3].conservatives = {
-                scene.pipes[0].gasSimulation.regions[3].density,
-                scene.pipes[0].gasSimulation.regions[3].density * scene.pipes[0].gasSimulation.regions[3].velocity,
-                scene.pipes[0].gasSimulation.regions[3].energy
-            };
-        }
-
         //drawing
-        m_graphicsPipeline->StepSimulation(scene);
         m_graphicsPipeline->UpdateGeometry(scene);
         m_graphicsPipeline->RenderScene(scene);
         m_graphicsPipeline->DrawUI(scene);
