@@ -22,8 +22,8 @@ void Application::Initialize() {
     scene = {};
     scene.camera = {};
 
-    scene.meshes.push_back(Mesh::LoadmeshFromOBJ("resources/meshes/monkey_smooth.obj"));
-    scene.meshes[0].position.y = 2.0f;
+    scene.models.push_back(Model::LoadModelFromOBJ("resources/meshes/fuel_tank.obj"));
+    scene.models[0].position.y = 2.0f;
 
     scene.pipes.push_back({{{
             glm::vec3(-1.0f, 0.0f, -1.0f),

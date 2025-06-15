@@ -95,7 +95,7 @@ struct BufferObject {
 struct Control {
     glm::vec3 position;
     float bevelRadius = 0.1f;
-    float radius = 0.2f;
+    float radius = 0.1f;
     bool selected = false;
     int bevelNumber = 0;
 
@@ -142,6 +142,7 @@ struct Pipe {
     Pipe(LinePath path) : path(path) {};
 
     int segments = 32;
+    glm::vec3 color = glm::vec3(1.0f, 0.8f, 0.5f);
 
     std::vector<float> positions;
     std::vector<float> normals;
@@ -172,16 +173,16 @@ struct TextureObject {
     void Unbind();
 };
 
+struct Material {
+    glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f);
+};
+
 struct Mesh {
     unsigned int id = rand();
 
-    static Mesh LoadmeshFromOBJ(std::string localPath, int meshIndex = 0);
+    Material material = {};
 
     void UpdateBuffers();
-
-    glm::vec3 position = glm::vec3(0.0f);
-    glm::vec3 rotation = glm::vec3(0.0f);
-    glm::vec3 scale = glm::vec3(1.0f);
 
     std::vector<float> vertices = {};
     std::vector<float> uvs = {};
@@ -195,8 +196,22 @@ struct Mesh {
     BufferObject<unsigned int>* indicesBuffer;
 };
 
-struct Scene {
+struct Model {
+    unsigned int id = rand();
+
+    static Model LoadModelFromOBJ(std::string localPath);
+
     std::vector<Mesh> meshes;
+
+    glm::vec3 position = glm::vec3(0.0f);
+    glm::vec3 rotation = glm::vec3(0.0f);
+    glm::vec3 scale = glm::vec3(1.0f);
+
+    Model(std::vector<Mesh> meshes) : meshes(meshes) {};
+};
+
+struct Scene {
+    std::vector<Model> models;
     std::vector<Pipe> pipes;
     Camera camera;
 

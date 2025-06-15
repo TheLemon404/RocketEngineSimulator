@@ -239,50 +239,56 @@ void TextureObject::Unbind() {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-Mesh Mesh::LoadmeshFromOBJ(std::string localPath, int meshIndex) {
+Model Model::LoadModelFromOBJ(std::string localPath) {
     Assimp::Importer Importer;
 
-    Mesh resultMesh{};
-
     const aiScene* scene = Importer.ReadFile(localPath.c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
-    aiMesh* mesh;
+
+    std::vector<Mesh> resultMeshes;
+    resultMeshes.resize(scene->mNumMeshes);
 
     if (scene) {
-        mesh = scene->mMeshes[meshIndex];
-        if (mesh) {
-            for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
-                const aiVector3D* pPos = &(mesh->mVertices[i]);
-                const aiVector3D* pNormal = &(mesh->mNormals[i]);
-                if (!mesh->HasTextureCoords(0)) {
-                    throw std::runtime_error("imported OBJ mesh must have uvs");
+        for (int i = 0; i < scene->mNumMeshes; i++) {
+            if (scene->mMeshes[i]) {
+                for (unsigned int j = 0; j < scene->mMeshes[i]->mNumVertices; j++) {
+                    const aiVector3D* pPos = &(scene->mMeshes[i]->mVertices[j]);
+                    const aiVector3D* pNormal = &(scene->mMeshes[i]->mNormals[j]);
+                    if (!scene->mMeshes[i]->HasTextureCoords(0)) {
+                        throw std::runtime_error("imported OBJ mesh must have uvs");
+                    }
+                    const aiVector3D* pTexCoord = &(scene->mMeshes[i]->mTextureCoords[0][j]);
+
+                    resultMeshes[i].vertices.push_back(pPos->x);
+                    resultMeshes[i].vertices.push_back(pPos->y);
+                    resultMeshes[i].vertices.push_back(pPos->z);
+                    resultMeshes[i].normals.push_back(pNormal->x);
+                    resultMeshes[i].normals.push_back(pNormal->y);
+                    resultMeshes[i].normals.push_back(pNormal->z);
+                    resultMeshes[i].uvs.push_back(pTexCoord->x);
+                    resultMeshes[i].uvs.push_back(pTexCoord->y);
                 }
-                const aiVector3D* pTexCoord = &(mesh->mTextureCoords[0][i]);
 
-                resultMesh.vertices.push_back(pPos->x);
-                resultMesh.vertices.push_back(pPos->y);
-                resultMesh.vertices.push_back(pPos->z);
-                resultMesh.normals.push_back(pNormal->x);
-                resultMesh.normals.push_back(pNormal->y);
-                resultMesh.normals.push_back(pNormal->z);
-                resultMesh.uvs.push_back(pTexCoord->x);
-                resultMesh.uvs.push_back(pTexCoord->y);
+                int materialIndex = scene->mMeshes[i]->mMaterialIndex;
+                aiMaterial* material = scene->mMaterials[materialIndex];
+                aiColor3D color;
+                if (material->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
+                    resultMeshes[i].material.color.r = color.r;
+                    resultMeshes[i].material.color.g = color.g;
+                    resultMeshes[i].material.color.b = color.b;
+                }
+
+                for (unsigned int j = 0; j < scene->mMeshes[i]->mNumFaces; j++) {
+                    const aiFace& Face = scene->mMeshes[i]->mFaces[j];
+                    assert(Face.mNumIndices == 3);
+                    resultMeshes[i].indices.push_back(Face.mIndices[0]);
+                    resultMeshes[i].indices.push_back(Face.mIndices[1]);
+                    resultMeshes[i].indices.push_back(Face.mIndices[2]);
+                }
             }
-
-            for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
-                const aiFace& Face = mesh->mFaces[i];
-                assert(Face.mNumIndices == 3);
-                resultMesh.indices.push_back(Face.mIndices[0]);
-                resultMesh.indices.push_back(Face.mIndices[1]);
-                resultMesh.indices.push_back(Face.mIndices[2]);
-            }
-
-            return resultMesh;
         }
-
-        throw runtime_error("Failed to load mesh file: " + localPath);
     }
-
-    throw runtime_error("Failed to load scene for mesh file: " + localPath);
+    Model model = {resultMeshes};
+    return model;
 }
 
 void Mesh::UpdateBuffers() {
@@ -295,12 +301,14 @@ void Mesh::UpdateBuffers() {
 }
 
 void Scene::CleanUp() {
-    for (int i = 0; i < meshes.size(); i++) {
-        meshes[i].vao->CleanUp();
-        meshes[i].positionsBuffer->CleanUp();
-        meshes[i].uvsBuffer->CleanUp();
-        meshes[i].normalsBuffer->CleanUp();
-        meshes[i].indicesBuffer->CleanUp();
+    for (int i = 0; i < models.size(); i++) {
+        for (int j = 0; j < models[i].meshes.size(); j++) {
+            models[i].meshes[j].vao->CleanUp();
+            models[i].meshes[j].positionsBuffer->CleanUp();
+            models[i].meshes[j].uvsBuffer->CleanUp();
+            models[i].meshes[j].normalsBuffer->CleanUp();
+            models[i].meshes[j].indicesBuffer->CleanUp();
+        }
     }
 }
 
@@ -454,13 +462,13 @@ int LinePath::Extrude(int controlIndex, glm::vec3 to) {
 
     if (controlIndex > 0) {
         Control s = {origin + (vectorLength * axis)};
-        controls[controls.size() - 1].bevelNumber = 1;
+        controls[controls.size() - 1].bevelNumber = 3;
         controls.push_back(s);
         return controls.size() - 1;
     }
 
     Control s = {origin + (vectorLength * axis)};
-    controls[0].bevelNumber = 1;
+    controls[0].bevelNumber = 3;
     controls.insert(controls.begin(), s);
     return 0;
 }

@@ -109,6 +109,13 @@ void GraphicsPipeline::Initialize() {
     m_unlitProgram = new ShaderProgramObject();
     m_unlitProgram->Compile(m_unlitVertexShader, m_unlitFragmentShader);
 
+    m_litVertexShader = new ShaderObject(GL_VERTEX_SHADER);
+    m_litVertexShader->Load("resources/shaders/lit.vert");
+    m_litFragmentShader = new ShaderObject(GL_FRAGMENT_SHADER);
+    m_litFragmentShader->Load("resources/shaders/lit.frag");
+    m_litProgram = new ShaderProgramObject();
+    m_litProgram->Compile(m_litVertexShader, m_litFragmentShader);
+
     m_normalVertexShader = new ShaderObject(GL_VERTEX_SHADER);
     m_normalVertexShader->Load("resources/shaders/normal.vert");
     m_normalFragmentShader = new ShaderObject(GL_FRAGMENT_SHADER);
@@ -172,8 +179,10 @@ void GraphicsPipeline::Initialize() {
 }
 
 void GraphicsPipeline::RegisterScene(Scene& scene) {
-    for (int i = 0; i < scene.meshes.size(); i++) {
-        RegisterMesh(scene.meshes[i]);
+    for (int i = 0; i < scene.models.size(); i++) {
+        for (int j = 0; j < scene.models[i].meshes.size(); j++) {
+            RegisterMesh(scene.models[i].meshes[j]);
+        }
     }
     for (int i = 0; i < scene.pipes.size(); i++) {
         RegisterPipe(scene.pipes[i]);
@@ -320,28 +329,31 @@ void GraphicsPipeline::DrawLinePathGizmos(LinePath linePath, Camera camera) {
     glEnable(GL_DEPTH_TEST);
 }
 
-void GraphicsPipeline::RenderMesh(Mesh& mesh, glm::mat4 view, glm::mat4 projection, Camera camera) {
-    m_pipeProgram->Use();
+void GraphicsPipeline::RenderModel(Model& model, glm::mat4 view, glm::mat4 projection, Camera camera) {
 
     glm::mat4 transform = glm::identity<glm::mat4>();
-    transform = glm::scale(transform, mesh.scale);
-    transform = glm::rotate(transform, mesh.rotation.x, glm::vec3(1, 0, 0));
-    transform = glm::rotate(transform, mesh.rotation.y, glm::vec3(0, 1, 0));
-    transform = glm::rotate(transform, mesh.rotation.z, glm::vec3(0, 0, 1));
-    transform = glm::translate(transform, mesh.position);
+    transform = glm::scale(transform, model.scale);
+    transform = glm::rotate(transform, model.rotation.x, glm::vec3(1, 0, 0));
+    transform = glm::rotate(transform, model.rotation.y, glm::vec3(0, 1, 0));
+    transform = glm::rotate(transform, model.rotation.z, glm::vec3(0, 0, 1));
+    transform = glm::translate(transform, model.position);
 
-    m_pipeProgram->UploadUniformMat4("projection", projection);
-    m_pipeProgram->UploadUniformMat4("view", view);
-    m_pipeProgram->UploadUniformMat4("transform", transform);
-    m_pipeProgram->UploadUniformVec3("lightColor", glm::vec3(0.5f, 0.8f, 1.0f));
-    m_pipeProgram->UploadUniformVec3("darkColor", glm::vec3(0.2f, 0.2f, 0.3f));
-    m_pipeProgram->UploadUniformVec3("fresnelColor", glm::vec3(0.7f, 0.7f, 0.9f));
-    m_pipeProgram->UploadUniformVec3("lightDirection", glm::vec3(0, -1, 0));
-    m_pipeProgram->UploadUniformVec3("viewDirection", normalize(camera.target - camera.position));
+    m_litProgram->Use();
 
-    mesh.vao->Bind();
-    glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
-    mesh.vao->Unbind();
+    m_litProgram->UploadUniformMat4("projection", projection);
+    m_litProgram->UploadUniformMat4("view", view);
+    m_litProgram->UploadUniformMat4("transform", transform);
+    m_litProgram->UploadUniformFloat("ambientLightStrength", 0.5f);
+    m_litProgram->UploadUniformVec3("lightDirection", glm::vec3(0, -1, 0));
+    m_litProgram->UploadUniformVec3("viewDirection", normalize(camera.target - camera.position));
+
+    for (int i = 0; i < model.meshes.size(); i++) {
+        m_litProgram->UploadUniformVec3("color", model.meshes[i].material.color);
+
+        model.meshes[i].vao->Bind();
+        glDrawElements(GL_TRIANGLES, model.meshes[i].indices.size(), GL_UNSIGNED_INT, 0);
+        model.meshes[i].vao->Unbind();
+    }
 
     glUseProgram(0);
 }
@@ -364,9 +376,9 @@ void GraphicsPipeline::RenderPipe(Pipe &pipe, glm::mat4 view, glm::mat4 projecti
     m_pipeProgram->UploadUniformMat4("projection", projection);
     m_pipeProgram->UploadUniformMat4("view", view);
     m_pipeProgram->UploadUniformMat4("transform", glm::identity<glm::mat4>());
-    m_pipeProgram->UploadUniformVec3("lightColor", glm::vec3(0.5f, 0.8f, 1.0f));
-    m_pipeProgram->UploadUniformVec3("darkColor", glm::vec3(0.2f, 0.2f, 0.3f));
-    m_pipeProgram->UploadUniformVec3("fresnelColor", glm::vec3(0.7f, 0.7f, 0.9f));
+    m_pipeProgram->UploadUniformVec3("lightColor", pipe.color);
+    m_pipeProgram->UploadUniformVec3("darkColor", pipe.color / 3.0f);
+    m_pipeProgram->UploadUniformVec3("fresnelColor", pipe.color / 2.0f);
     m_pipeProgram->UploadUniformVec3("lightDirection", glm::vec3(0, -1, 0));
     m_pipeProgram->UploadUniformVec3("viewDirection", normalize(camera.target - camera.position));
     pipe.vao->Bind();
@@ -430,7 +442,7 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
         ClearSelection(scene);
     }
 
-    if (Input::IsKeyJustPressed(GLFW_KEY_LEFT_SHIFT)) {
+    if (Input::IsKeyJustPressed(GLFW_KEY_LEFT_SHIFT) && m_currentSelectedControlIndex != -1 && m_currentSelectedPipeIndex != -1) {
         m_origin = scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position;
     }
     if (Input::IsKeyJustPressed(GLFW_KEY_LEFT_CONTROL)) {
@@ -438,7 +450,7 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
     }
 
     float delta = glm::distance(worldPos, m_origin);
-    if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] != GLFW_RELEASE || Input::keyStates[GLFW_KEY_LEFT_CONTROL] != GLFW_RELEASE) {
+    if ((Input::keyStates[GLFW_KEY_LEFT_SHIFT] != GLFW_RELEASE || Input::keyStates[GLFW_KEY_LEFT_CONTROL] != GLFW_RELEASE) && m_currentSelectedControlIndex != -1) {
         m_axis = LinePath::RoundToMajorAxis(glm::normalize(worldPos - m_origin));
     }
 
@@ -515,8 +527,8 @@ void GraphicsPipeline::RenderScene(Scene& scene) {
     glEnable(GL_DEPTH_TEST);
 
     //render meshes in scene
-    for (int i = 0; i < scene.meshes.size(); i++) {
-        RenderMesh(scene.meshes[i], view, projection, scene.camera);
+    for (int i = 0; i < scene.models.size(); i++) {
+        RenderModel(scene.models[i], view, projection, scene.camera);
     }
 
     //render pipes in scene
@@ -556,7 +568,7 @@ void GraphicsPipeline::DrawUI(Scene& scene) {
 
     //vertex locked axis
     if (m_currentSelectedControlIndex != -1) {
-        if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_REPEAT) {
+        if ((Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_REPEAT) && m_currentSelectedControlIndex != -1) {
             DrawDebugLine3D(m_origin + (-100.0f * m_axis), m_origin + (100.0f * m_axis), abs(m_axis), scene.camera);
             DrawDebugSphere3D(m_origin, 0.15f, abs(m_axis), scene.camera);
         }

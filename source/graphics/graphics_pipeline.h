@@ -25,6 +25,10 @@ class GraphicsPipeline {
     ShaderObject* m_unlitFragmentShader;
     ShaderProgramObject* m_unlitProgram;
 
+    ShaderObject* m_litVertexShader;
+    ShaderObject* m_litFragmentShader;
+    ShaderProgramObject* m_litProgram;
+
     ShaderObject* m_normalVertexShader;
     ShaderObject* m_normalFragmentShader;
     ShaderProgramObject* m_normalProgram;
@@ -84,7 +88,7 @@ public:
     void UpdateGeometry(Scene& scene);
 
     //rendering
-    void RenderMesh(Mesh& mesh, glm::mat4 view, glm::mat4 projection, Camera camera);
+    void RenderModel(Model& model, glm::mat4 view, glm::mat4 projection, Camera camera);
     void RenderLinePath(LinePath& linePath, glm::mat4 view, glm::mat4 projection);
     void RenderPipe(Pipe& pipe, glm::mat4 view, glm::mat4 projection, Camera camera);
     void RenderScene(Scene& scene);
