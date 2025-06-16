@@ -344,7 +344,7 @@ void GraphicsPipeline::RenderModel(Model& model, glm::mat4 view, glm::mat4 proje
     m_litProgram->UploadUniformMat4("view", view);
     m_litProgram->UploadUniformMat4("transform", transform);
     m_litProgram->UploadUniformFloat("ambientLightStrength", 0.5f);
-    m_litProgram->UploadUniformVec3("lightDirection", glm::vec3(0, -1, 0));
+    m_litProgram->UploadUniformVec3("lightDirection", normalize(camera.target - camera.position));
     m_litProgram->UploadUniformVec3("viewDirection", normalize(camera.target - camera.position));
 
     for (int i = 0; i < model.meshes.size(); i++) {
@@ -379,7 +379,7 @@ void GraphicsPipeline::RenderPipe(Pipe &pipe, glm::mat4 view, glm::mat4 projecti
     m_pipeProgram->UploadUniformVec3("lightColor", pipe.color);
     m_pipeProgram->UploadUniformVec3("darkColor", pipe.color / 3.0f);
     m_pipeProgram->UploadUniformVec3("fresnelColor", pipe.color / 2.0f);
-    m_pipeProgram->UploadUniformVec3("lightDirection", glm::vec3(0, -1, 0));
+    m_pipeProgram->UploadUniformVec3("lightDirection", normalize(camera.target - camera.position));
     m_pipeProgram->UploadUniformVec3("viewDirection", normalize(camera.target - camera.position));
     pipe.vao->Bind();
     glDrawElements(GL_TRIANGLES, pipe.indices.size(), GL_UNSIGNED_INT, 0);
