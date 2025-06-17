@@ -95,7 +95,6 @@ struct BufferObject {
 struct Control {
     glm::vec3 position;
     float bevelRadius = 0.1f;
-    float radius = 0.1f;
     bool selected = false;
     int bevelNumber = 0;
 
@@ -107,7 +106,7 @@ private:
 
 public:
 
-    void CheckSelection(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
+    void CheckSelection(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution, float radius);
     std::vector<glm::vec3> ExtractBeveledPositions(glm::vec3 prevPoint, glm::vec3 nextPoint);
 };
 
@@ -122,13 +121,15 @@ struct LinePath {
 
     void UpdatePositionsArray();
     std::vector<glm::vec3> ExtractPositions();
-    int GetSelectedControlIndex(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
+    int GetSelectedControlIndex(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution, float radius);
 
     int Extrude(int controlIndex, glm::vec3 to);
     void Delete(int controlIndex);
     void UpdatePositionsBuffer();
 
     int GetNumVertices();
+
+    float GetLineLength();
 
     std::vector<float> positions;
 
@@ -140,9 +141,9 @@ struct Pipe {
     unsigned int id = rand();
     LinePath path;
 
-    Pipe(LinePath path) : path(path) {};
-
+    //rendering
     int segments = 32;
+    float radius = 0.2f;
     glm::vec3 color = glm::vec3(1.0f, 0.8f, 0.5f);
 
     std::vector<float> positions;
@@ -154,7 +155,14 @@ struct Pipe {
     BufferObject<float>* normalsBuffer;
     BufferObject<unsigned int>* indicesBuffer;
 
+    //flow physics
+    float massFlowRate;
+
+    Pipe(LinePath path) : path(path) {};
+
     void UpdatePositionsBuffer();
+
+    void ComputeMassFlowRate(float density, float velocity);
 
     void TransportFrame(glm::vec3 prevTangent, glm::vec3 newTangent, glm::vec3& right, glm::vec3& up);
     std::vector<glm::vec3> GenerateRingWithFrame(glm::vec3 center, glm::vec3 tangent, glm::vec3 right, glm::vec3 up, float radius);

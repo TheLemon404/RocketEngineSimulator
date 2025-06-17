@@ -7,6 +7,7 @@
 #include <numbers>
 
 #include "input.h"
+#include "../simulation/engine_simulation.h"
 
 Application::Application(std::string version) {
     m_version = version;
@@ -22,8 +23,8 @@ void Application::Initialize() {
     scene = {};
     scene.camera = {};
 
-    scene.models.push_back(Model::LoadModelFromOBJ("resources/meshes/fuel_tank.obj"));
-    scene.models.push_back(Model::LoadModelFromOBJ("resources/meshes/oxidizer_tank.obj"));
+    scene.models.push_back(Tank({}, 10.0f, 10.0f));
+    scene.models.push_back(ElectricPump());
     scene.models[0].position.x = 2.0f;
     scene.models[1].position.x = -2.0f;
 

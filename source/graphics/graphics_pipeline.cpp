@@ -6,6 +6,7 @@
 
 #include "imoguizmo.hpp"
 #include "../core/input.h"
+#include "../simulation/engine_simulation.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 #include "glm/ext/matrix_clip_space.hpp"
@@ -418,10 +419,24 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
     float t = glm::dot(planeNormal, (planePosition - rayOrigin)) / denominator;
     worldPos = rayOrigin + t * rayDir;
 
+    //find possible connection point
+    glm::vec3 connectionPoint;
+    int connectionPointIndex = -1;
+
+    if (m_currentSelectedControlIndex != -1 && m_currentSelectedPipeIndex != -1) {
+        for (int i = 0; i < scene.models.size(); i++) {
+            if (typeid(scene.models[i]) == typeid(ConnectableModel)) {
+                ConnectableModel connectableModel = static_cast<ConnectableModel>(scene.models[i]);
+                connectionPointIndex = connectableModel.GetCurrentConnectionPointIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
+                connectionPoint = connectableModel.connectionPoints[connectionPointIndex];
+            }
+        }
+    }
+
     //manage gizmo selection and linePath manipulation
     if (Input::IsMouseButtonJustPressed(GLFW_MOUSE_BUTTON_1) && m_currentSelectedControlIndex != -1) {
         for (int i = 0; i < scene.pipes.size(); i++) {
-            m_currentSelectedControlIndex = scene.pipes[i].path.GetSelectedControlIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
+            m_currentSelectedControlIndex = scene.pipes[i].path.GetSelectedControlIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions(), scene.pipes[i].radius);
             if(m_currentSelectedControlIndex != -1) {
                 m_currentSelectedPipeIndex = i;
                 return;
@@ -432,7 +447,7 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
     }
     if (Input::IsMouseButtonJustReleased(GLFW_MOUSE_BUTTON_1)) {
         for (int i = 0; i < scene.pipes.size(); i++) {
-            m_currentSelectedControlIndex = scene.pipes[i].path.GetSelectedControlIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
+            m_currentSelectedControlIndex = scene.pipes[i].path.GetSelectedControlIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions(), scene.pipes[i].radius);
             if(m_currentSelectedControlIndex != -1) {
                 m_currentSelectedPipeIndex = i;
                 return;
@@ -458,12 +473,16 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
         if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS) {
             if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] != GLFW_RELEASE || Input::keyStates[GLFW_KEY_LEFT_CONTROL] != GLFW_RELEASE) {
                 scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = m_origin + (delta * m_axis);
-                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
             }
             else {
                 scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = worldPos;
-                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
             }
+
+            if (connectionPointIndex != -1) {
+                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = connectionPoint;
+            }
+
+            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
         }
 
         if (Input::IsKeyJustPressed(GLFW_KEY_DELETE)) {
@@ -488,7 +507,7 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
         }
 
         if ((Input::keyStates[GLFW_KEY_S] == GLFW_PRESS || Input::keyStates[GLFW_KEY_S] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0) {
-            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].radius += Input::mouseScrollVector.y / 100.0f;
+            scene.pipes[m_currentSelectedPipeIndex].radius += Input::mouseScrollVector.y / 100.0f;
             scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
         }
 

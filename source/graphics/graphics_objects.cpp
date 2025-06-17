@@ -370,7 +370,7 @@ int Control::GetNumBeveledVertices() {
     return pow(2, bevelNumber);
 }
 
-void Control::CheckSelection(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution) {
+void Control::CheckSelection(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution, float radius) {
     //convert world space to screen space
     glm::vec4 worldPosition = glm::vec4(position.x, position.y, position.z, 1.0f);
     glm::vec4 viewPosition = view * worldPosition;
@@ -444,9 +444,9 @@ std::vector<glm::vec3> LinePath::ExtractPositions() {
     return result;
 }
 
-int LinePath::GetSelectedControlIndex(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution) {
+int LinePath::GetSelectedControlIndex(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution, float radius) {
     for (int i = 0; i < controls.size(); i++) {
-        controls[i].CheckSelection(mousePosition, view, projection, screenResolution);
+        controls[i].CheckSelection(mousePosition, view, projection, screenResolution, radius);
     }
     for (int i = 0; i < controls.size(); i++) {
         if (controls[i].selected) {
@@ -498,6 +498,15 @@ int LinePath::GetNumVertices() {
     return sum;
 }
 
+float LinePath::GetLineLength() {
+    float d = 0;
+    std::vector<glm::vec3> positions = ExtractPositions();
+    for (int i = 0; i < positions.size() - 1; i++) {
+        d += glm::distance(positions[i], positions[i + 1]);
+    }
+    return d;
+}
+
 void Pipe::UpdatePositionsBuffer() {
     UpdateArrays();
     positionsBuffer->Upload(positions);
@@ -518,6 +527,11 @@ std::vector<glm::vec3> Pipe::GenerateRingWithFrame(glm::vec3 center, glm::vec3 t
     }
 
     return ring;
+}
+
+void Pipe::ComputeMassFlowRate(float density, float velocity) {
+    float crossSectionalArea = path.GetLineLength() * (M_PI * pow(radius, 2));
+    massFlowRate = density * velocity * crossSectionalArea;
 }
 
 // Helper function to transport a frame along the path
@@ -586,7 +600,7 @@ void Pipe::UpdateArrays() {
         }
         tangent = newTangent;
 
-        std::vector<glm::vec3> ring = GenerateRingWithFrame(points[i], tangent, right, up, path.controls[controlIndex].radius);
+        std::vector<glm::vec3> ring = GenerateRingWithFrame(points[i], tangent, right, up, radius);
         for (const glm::vec3& p : ring) {
             glm::vec3 normal = normalize(p - points[i]);
             positions.push_back(p.x);

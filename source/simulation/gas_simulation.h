@@ -12,6 +12,14 @@
 
 #endif //GAS_SIMULATION_H
 
+//for simplified uses
+struct Gas {
+    float specificConstant = 1.0f;
+    float density = 1.0f;
+    glm::vec3 color = glm::vec3(0.8f);
+};
+
+//for CFD
 struct GasRegion {
     float size = 0;
     float density = 1.0f;
