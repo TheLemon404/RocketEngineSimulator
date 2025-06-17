@@ -275,7 +275,9 @@ Model Model::LoadModelFromOBJ(std::string localPath) {
                     resultMeshes[i].material.color.r = color.r;
                     resultMeshes[i].material.color.g = color.g;
                     resultMeshes[i].material.color.b = color.b;
+                    std::cout << color.r << " " << color.g << " " << color.b << std::endl;
                 }
+
 
                 for (unsigned int j = 0; j < scene->mMeshes[i]->mNumFaces; j++) {
                     const aiFace& Face = scene->mMeshes[i]->mFaces[j];
@@ -471,6 +473,16 @@ int LinePath::Extrude(int controlIndex, glm::vec3 to) {
     controls[0].bevelNumber = 3;
     controls.insert(controls.begin(), s);
     return 0;
+}
+
+void LinePath::Delete(int controlIndex) {
+    if (controlIndex == 0) {
+        controls[controlIndex + 1].bevelNumber = 0;
+    }
+    if (controlIndex == controls.size() - 1  ) {
+        controls[controlIndex - 1].bevelNumber = 0;
+    }
+    controls.erase(controls.begin() + controlIndex);
 }
 
 void LinePath::UpdatePositionsBuffer() {

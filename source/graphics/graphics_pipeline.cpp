@@ -344,7 +344,7 @@ void GraphicsPipeline::RenderModel(Model& model, glm::mat4 view, glm::mat4 proje
     m_litProgram->UploadUniformMat4("view", view);
     m_litProgram->UploadUniformMat4("transform", transform);
     m_litProgram->UploadUniformFloat("ambientLightStrength", 0.5f);
-    m_litProgram->UploadUniformVec3("lightDirection", normalize(camera.target - camera.position));
+    m_litProgram->UploadUniformVec3("lightDirection", normalize(glm::vec3(-1, -1, -1)));
     m_litProgram->UploadUniformVec3("viewDirection", normalize(camera.target - camera.position));
 
     for (int i = 0; i < model.meshes.size(); i++) {
@@ -379,7 +379,7 @@ void GraphicsPipeline::RenderPipe(Pipe &pipe, glm::mat4 view, glm::mat4 projecti
     m_pipeProgram->UploadUniformVec3("lightColor", pipe.color);
     m_pipeProgram->UploadUniformVec3("darkColor", pipe.color / 3.0f);
     m_pipeProgram->UploadUniformVec3("fresnelColor", pipe.color / 2.0f);
-    m_pipeProgram->UploadUniformVec3("lightDirection", normalize(camera.target - camera.position));
+    m_pipeProgram->UploadUniformVec3("lightDirection", normalize(glm::vec3(-1, -1, -1)));
     m_pipeProgram->UploadUniformVec3("viewDirection", normalize(camera.target - camera.position));
     pipe.vao->Bind();
     glDrawElements(GL_TRIANGLES, pipe.indices.size(), GL_UNSIGNED_INT, 0);
@@ -464,6 +464,12 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
                 scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = worldPos;
                 scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
             }
+        }
+
+        if (Input::IsKeyJustPressed(GLFW_KEY_DELETE)) {
+            scene.pipes[m_currentSelectedPipeIndex].path.Delete(m_currentSelectedControlIndex);
+            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
+            m_currentSelectedControlIndex = -1;
         }
 
         if ((Input::keyStates[GLFW_KEY_B] == GLFW_PRESS || Input::keyStates[GLFW_KEY_B] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0) {

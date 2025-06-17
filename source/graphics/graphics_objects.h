@@ -125,6 +125,7 @@ struct LinePath {
     int GetSelectedControlIndex(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
 
     int Extrude(int controlIndex, glm::vec3 to);
+    void Delete(int controlIndex);
     void UpdatePositionsBuffer();
 
     int GetNumVertices();
