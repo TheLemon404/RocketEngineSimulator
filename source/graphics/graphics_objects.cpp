@@ -293,6 +293,23 @@ Model Model::LoadModelFromOBJ(std::string localPath) {
     return model;
 }
 
+int Model::GetCurrentConnectionPointIndex(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution) {
+    for (int i = 0; i < connectionPoints.size(); i++) {
+        //convert world space to screen space
+        glm::vec4 worldPosition = glm::vec4(position.x + connectionPoints[i].x, position.y + connectionPoints[i].y, position.z + connectionPoints[i].z, 1.0f);
+        glm::vec4 viewPosition = view * worldPosition;
+        glm::vec4 clipPosition = projection * viewPosition;
+        glm::vec3 ndcPos = glm::vec3(clipPosition.x / clipPosition.w, clipPosition.y / clipPosition.w, clipPosition.z / clipPosition.w);
+        glm::vec2 screenCoords = glm::ivec2((ndcPos.x + 1.0f) * 0.5f * screenResolution.x, (1.0f - ndcPos.y) * 0.5f * screenResolution.y);
+
+        if (glm::distance(screenCoords, mousePosition) < selectionRadius * 100.0f) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
 void Mesh::UpdateBuffers() {
     vao->Bind();
 

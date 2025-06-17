@@ -208,6 +208,8 @@ void GraphicsPipeline::DrawGasSimulation(GasSimulation gasSimulation, Camera cam
 }
 
 void GraphicsPipeline::DrawDebugSphere3D(glm::vec3 center, float radius, glm::vec3 color, Camera camera) {
+    glDisable(GL_DEPTH_TEST);
+
     const int rings = 32;
     const int sectors = 64;
 
@@ -258,6 +260,8 @@ void GraphicsPipeline::DrawDebugSphere3D(glm::vec3 center, float radius, glm::ve
     glMatrixMode(GL_PROJECTION);
     glPopMatrix(); // Restore projection
     glMatrixMode(GL_MODELVIEW);
+
+    glEnable(GL_DEPTH_TEST);
 }
 
 void GraphicsPipeline::DrawDebugLine3D(glm::vec3 p1, glm::vec3 p2, glm::vec3 color, Camera camera) {
@@ -323,11 +327,9 @@ void GraphicsPipeline::DrawDebugCircle2D(glm::vec2 center, float radius, glm::ve
 }
 
 void GraphicsPipeline::DrawLinePathGizmos(LinePath linePath, Camera camera) {
-    glDisable(GL_DEPTH_TEST);
     for (int i = 0; i < linePath.controls.size(); i++) {
         DrawDebugSphere3D(linePath.controls[i].position, std::clamp(linePath.controls[i].bevelRadius / 2.0f, 0.2f, 100.0f), linePath.controls[i].selected ? glm::vec3(1.0f) : glm::vec3(1.0f, 0.0, 0.0), camera);
     }
-    glEnable(GL_DEPTH_TEST);
 }
 
 void GraphicsPipeline::RenderModel(Model& model, glm::mat4 view, glm::mat4 projection, Camera camera) {
@@ -425,10 +427,10 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
 
     if (m_currentSelectedControlIndex != -1 && m_currentSelectedPipeIndex != -1) {
         for (int i = 0; i < scene.models.size(); i++) {
-            if (typeid(scene.models[i]) == typeid(ConnectableModel)) {
-                ConnectableModel connectableModel = static_cast<ConnectableModel>(scene.models[i]);
-                connectionPointIndex = connectableModel.GetCurrentConnectionPointIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
-                connectionPoint = connectableModel.connectionPoints[connectionPointIndex];
+            connectionPointIndex = scene.models[i].GetCurrentConnectionPointIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
+            if (connectionPointIndex != -1) {
+                connectionPoint = scene.models[i].GetGlobalConnectionPoint(connectionPointIndex);
+                break;
             }
         }
     }
@@ -478,7 +480,7 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
                 scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = worldPos;
             }
 
-            if (connectionPointIndex != -1) {
+            if (connectionPointIndex != -1 && (m_currentSelectedControlIndex == 0 || m_currentSelectedControlIndex == scene.pipes[m_currentSelectedPipeIndex].path.controls.size()-1)) {
                 scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = connectionPoint;
             }
 
@@ -511,7 +513,7 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
             scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
         }
 
-        if (Input::IsKeyJustReleased(GLFW_KEY_E)) {
+        if (Input::IsKeyJustReleased(GLFW_KEY_E) && (m_currentSelectedControlIndex == 0 || m_currentSelectedControlIndex == scene.pipes[m_currentSelectedPipeIndex].path.controls.size()-1)) {
             int newSelectedControl = scene.pipes[m_currentSelectedPipeIndex].path.Extrude(m_currentSelectedControlIndex, worldPos);
             scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
             ClearSelection(scene);
@@ -560,6 +562,14 @@ void GraphicsPipeline::RenderScene(Scene& scene) {
     for (int i = 0; i < scene.pipes.size(); i++) {
         RenderPipe(scene.pipes[i], view, projection, scene.camera);
         DrawLinePathGizmos(scene.pipes[i].path, scene.camera);
+    }
+
+    for (int i = 0; i < scene.models.size(); i++) {
+        int connectionPointIndex = scene.models[i].GetCurrentConnectionPointIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
+        if (connectionPointIndex != -1) {
+            glm::vec3 connectionPoint = scene.models[i].GetGlobalConnectionPoint(connectionPointIndex);
+            DrawDebugSphere3D(connectionPoint, scene.models[i].selectionRadius, glm::vec3(1,1,0), scene.camera);
+        }
     }
 }
 

@@ -207,6 +207,8 @@ struct Mesh {
 
 struct Model {
     unsigned int id = rand();
+    std::vector<glm::vec3> connectionPoints;
+    float selectionRadius = 0.3f;
 
     static Model LoadModelFromOBJ(std::string localPath);
 
@@ -217,6 +219,9 @@ struct Model {
     glm::vec3 scale = glm::vec3(1.0f);
 
     Model(std::vector<Mesh> meshes) : meshes(meshes) {};
+
+    int GetCurrentConnectionPointIndex(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
+    glm::vec3 GetGlobalConnectionPoint(int connectionPointIndex) { return connectionPoints[connectionPointIndex] + position;}
 };
 
 struct Scene {

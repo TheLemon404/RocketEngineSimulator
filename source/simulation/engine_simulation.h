@@ -10,16 +10,7 @@
 
 #endif //ENGINE_SIMULATION_H
 
-struct ConnectableModel : Model {
-    std::vector<glm::vec3> connectionPoints;
-    float radius = 0.3f;
-
-    ConnectableModel(Model model) : Model(model) {};
-
-    int GetCurrentConnectionPointIndex(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
-};
-
-struct Tank : ConnectableModel {
+struct Tank : Model {
     Gas storedGas = {};
     float volume = 0.0f;
     float storedAmount = 0.0f;;
@@ -27,14 +18,14 @@ struct Tank : ConnectableModel {
     Tank(Gas storedGas, float volume, float storedAmount);
 };
 
-struct Pump : ConnectableModel {
-    Pump(Model model) : ConnectableModel(model) {};
+struct Pump : Model {
+    Pump(Model model) : Model(model) {};
 };
 
 struct ElectricPump : Pump {
     ElectricPump();
 };
 
-struct Engine : ConnectableModel {
+struct Engine : Model {
 
 };
