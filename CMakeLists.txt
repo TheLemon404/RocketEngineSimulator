@@ -12,9 +12,7 @@ target_compile_definitions(glfw PRIVATE
         _WIN32_WINNT=0x0600
 )
 
-if(WIN32)
-    add_subdirectory(dependencies/glfw)
-else()
+if(!WIN32)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GLFW3 REQUIRED glfw3)
     find_package(assimp REQUIRED)
