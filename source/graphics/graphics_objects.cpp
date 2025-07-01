@@ -325,13 +325,19 @@ void Mesh::UpdateBuffers() {
 
 void Scene::CleanUp() {
     for (int i = 0; i < models.size(); i++) {
-        for (int j = 0; j < models[i].meshes.size(); j++) {
-            models[i].meshes[j].vao->CleanUp();
-            models[i].meshes[j].positionsBuffer->CleanUp();
-            models[i].meshes[j].uvsBuffer->CleanUp();
-            models[i].meshes[j].normalsBuffer->CleanUp();
-            models[i].meshes[j].indicesBuffer->CleanUp();
+        for (int j = 0; j < models[i]->meshes.size(); j++) {
+            models[i]->meshes[j].vao->CleanUp();
+            models[i]->meshes[j].positionsBuffer->CleanUp();
+            models[i]->meshes[j].uvsBuffer->CleanUp();
+            models[i]->meshes[j].normalsBuffer->CleanUp();
+            models[i]->meshes[j].indicesBuffer->CleanUp();
         }
+
+        delete models[i];
+    }
+
+    for (int i = 0; i < pipes.size(); i++) {
+        delete pipes[i];
     }
 }
 

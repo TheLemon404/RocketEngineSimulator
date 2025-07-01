@@ -9,6 +9,7 @@
 
 #include "window.h"
 #include "../graphics/graphics_pipeline.h"
+#include "../simulation/engine_simulation.h"
 
 #endif //APPLICATION_H
 
@@ -16,7 +17,8 @@ class Application {
     std::string m_version;
     Window* m_window;
     GraphicsPipeline* m_graphicsPipeline;
-    Scene scene;
+    SimulationPipeline* m_simulationPipeline;
+    Scene* m_scene;
 
     void MoveCamera();
 

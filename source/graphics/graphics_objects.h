@@ -92,11 +92,16 @@ struct BufferObject {
     void CleanUp();
 };
 
+struct Model;
+
 struct Control {
     glm::vec3 position;
     float bevelRadius = 0.1f;
     bool selected = false;
     int bevelNumber = 0;
+    int connectedSimulationObjectType = 0;
+    Model* connectedSimulationObjectModel = nullptr;
+    float controlPointPressure = 0.0f;
 
     Control(glm::vec3 position) : position(position) {};
     int GetNumBeveledVertices();
@@ -140,6 +145,9 @@ struct LinePath {
 struct Pipe {
     unsigned int id = rand();
     LinePath path;
+
+    //simulation
+    float totalInternalPressure;
 
     //rendering
     int segments = 32;
@@ -209,6 +217,7 @@ struct Model {
     unsigned int id = rand();
     std::vector<glm::vec3> connectionPoints;
     float selectionRadius = 0.3f;
+    int simulationObjectType = 0;
 
     static Model LoadModelFromOBJ(std::string localPath);
 
@@ -225,8 +234,8 @@ struct Model {
 };
 
 struct Scene {
-    std::vector<Model> models;
-    std::vector<Pipe> pipes;
+    std::vector<Model*> models;
+    std::vector<Pipe*> pipes;
     Camera camera;
 
     void CleanUp();

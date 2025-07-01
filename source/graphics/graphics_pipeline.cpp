@@ -16,77 +16,77 @@ GraphicsPipeline::GraphicsPipeline(Window *window) {
     p_window = window;
 }
 
-void GraphicsPipeline::RegisterMesh(Mesh& mesh) {
-    mesh.vao = new VertexArrayObject();
-    mesh.vao->Bind();
+void GraphicsPipeline::RegisterMesh(Mesh* mesh) {
+    mesh->vao = new VertexArrayObject();
+    mesh->vao->Bind();
 
     //vertex positions
-    mesh.positionsBuffer = new BufferObject<float>();
-    mesh.positionsBuffer->Upload(mesh.vertices);
-    mesh.vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
+    mesh->positionsBuffer = new BufferObject<float>();
+    mesh->positionsBuffer->Upload(mesh->vertices);
+    mesh->vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
 
     //vertex normals
-    if (mesh.normals.size() > 0) {
-        mesh.normalsBuffer = new BufferObject<float>();
-        mesh.normalsBuffer->Upload(mesh.normals);
-        mesh.vao->CreateVertexAttributePointer(1, 3, sizeof(float), GL_FLOAT);
+    if (mesh->normals.size() > 0) {
+        mesh->normalsBuffer = new BufferObject<float>();
+        mesh->normalsBuffer->Upload(mesh->normals);
+        mesh->vao->CreateVertexAttributePointer(1, 3, sizeof(float), GL_FLOAT);
     }
 
     //vertex uvs
-    if (mesh.uvs.size() > 0) {
-        mesh.uvsBuffer = new BufferObject<float>();
-        mesh.uvsBuffer->Upload(mesh.uvs);
-        mesh.vao->CreateVertexAttributePointer(2, 2, sizeof(float), GL_FLOAT);
+    if (mesh->uvs.size() > 0) {
+        mesh->uvsBuffer = new BufferObject<float>();
+        mesh->uvsBuffer->Upload(mesh->uvs);
+        mesh->vao->CreateVertexAttributePointer(2, 2, sizeof(float), GL_FLOAT);
     }
 
     //indices
-    mesh.indicesBuffer = new BufferObject<unsigned int>();
-    mesh.indicesBuffer->Upload(mesh.indices);
+    mesh->indicesBuffer = new BufferObject<unsigned int>();
+    mesh->indicesBuffer->Upload(mesh->indices);
 
-    mesh.vao->Unbind();
+    mesh->vao->Unbind();
 
-    std::cout << "mesh: " << mesh.id << " has been registered" << std::endl;
+    std::cout << "mesh: " << mesh->id << " has been registered" << std::endl;
 }
 
-void GraphicsPipeline::RegisterLinePath(LinePath &linePath) {
-    linePath.UpdatePositionsArray();
+void GraphicsPipeline::RegisterLinePath(LinePath* linePath) {
+    linePath->UpdatePositionsArray();
 
-    linePath.vao = new VertexArrayObject();
-    linePath.vao->Bind();
+    linePath->vao = new VertexArrayObject();
+    linePath->vao->Bind();
 
     //vertex positions
-    linePath.positionsBuffer = new BufferObject<float>();
-    linePath.positionsBuffer->Upload(linePath.positions);
-    linePath.vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
+    linePath->positionsBuffer = new BufferObject<float>();
+    linePath->positionsBuffer->Upload(linePath->positions);
+    linePath->vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
 
-    linePath.vao->Unbind();
+    linePath->vao->Unbind();
 
-    std::cout << "linePath: " << linePath.id << " has been registered" << std::endl;
+    std::cout << "linePath: " << linePath->id << " has been registered" << std::endl;
 }
 
-void GraphicsPipeline::RegisterPipe(Pipe &pipe) {
-    pipe.UpdateArrays();
+void GraphicsPipeline::RegisterPipe(Pipe* pipe) {
+    pipe->UpdateArrays();
 
-    pipe.vao = new VertexArrayObject();
-    pipe.vao->Bind();
+    pipe->vao = new VertexArrayObject();
+    pipe->vao->Bind();
 
     //vertex positions
-    pipe.positionsBuffer = new BufferObject<float>();
-    pipe.positionsBuffer->Upload(pipe.positions);
-    pipe.vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
+    pipe->positionsBuffer = new BufferObject<float>();
+    pipe->positionsBuffer->Upload(pipe->positions);
+    pipe->vao->CreateVertexAttributePointer(0, 3, sizeof(float), GL_FLOAT);
 
     //normals
-    pipe.normalsBuffer = new BufferObject<float>();
-    pipe.normalsBuffer->Upload(pipe.normals);
-    pipe.vao->CreateVertexAttributePointer(1, 3, sizeof(float), GL_FLOAT);
+    pipe->normalsBuffer = new BufferObject<float>();
+    pipe->normalsBuffer->Upload(pipe->normals);
+    pipe->vao->CreateVertexAttributePointer(1, 3, sizeof(float), GL_FLOAT);
 
     //indices
-    pipe.indicesBuffer = new BufferObject<unsigned int>();
-    pipe.indicesBuffer->Upload(pipe.indices);
+    pipe->indicesBuffer = new BufferObject<unsigned int>();
+    pipe->indicesBuffer->Upload(pipe->indices);
 
-    pipe.vao->Unbind();
+    pipe->vao->Unbind();
 
-    std::cout << "pipe: " << pipe.id << " has been registered" << std::endl;
+    std::cout << "pipe: " << pipe->id << " has been registered" << std::endl;
 }
 
 void GraphicsPipeline::Initialize() {
@@ -179,21 +179,21 @@ void GraphicsPipeline::Initialize() {
     ImGui_ImplOpenGL3_Init("#version 450");
 }
 
-void GraphicsPipeline::RegisterScene(Scene& scene) {
-    for (int i = 0; i < scene.models.size(); i++) {
-        for (int j = 0; j < scene.models[i].meshes.size(); j++) {
-            RegisterMesh(scene.models[i].meshes[j]);
+void GraphicsPipeline::RegisterScene(Scene* scene) {
+    for (int i = 0; i < scene->models.size(); i++) {
+        for (int j = 0; j < scene->models[i]->meshes.size(); j++) {
+            RegisterMesh(&scene->models[i]->meshes[j]);
         }
     }
-    for (int i = 0; i < scene.pipes.size(); i++) {
-        RegisterPipe(scene.pipes[i]);
+    for (int i = 0; i < scene->pipes.size(); i++) {
+        RegisterPipe(scene->pipes[i]);
     }
 }
 
-void GraphicsPipeline::ClearSelection(Scene& scene) {
-    for (int i = 0; i < scene.pipes.size(); i++) {
-        for (int j = 0; j < scene.pipes[i].path.controls.size(); j++) {
-            scene.pipes[i].path.controls[j].selected = false;
+void GraphicsPipeline::ClearSelection(Scene* scene) {
+    for (int i = 0; i < scene->pipes.size(); i++) {
+        for (int j = 0; j < scene->pipes[i]->path.controls.size(); j++) {
+            scene->pipes[i]->path.controls[j].selected = false;
         }
     }
     m_currentSelectedControlIndex = -1;
@@ -332,14 +332,14 @@ void GraphicsPipeline::DrawLinePathGizmos(LinePath linePath, Camera camera) {
     }
 }
 
-void GraphicsPipeline::RenderModel(Model& model, glm::mat4 view, glm::mat4 projection, Camera camera) {
+void GraphicsPipeline::RenderModel(Model* model, glm::mat4 view, glm::mat4 projection, Camera camera) {
 
     glm::mat4 transform = glm::identity<glm::mat4>();
-    transform = glm::scale(transform, model.scale);
-    transform = glm::rotate(transform, model.rotation.x, glm::vec3(1, 0, 0));
-    transform = glm::rotate(transform, model.rotation.y, glm::vec3(0, 1, 0));
-    transform = glm::rotate(transform, model.rotation.z, glm::vec3(0, 0, 1));
-    transform = glm::translate(transform, model.position);
+    transform = glm::scale(transform, model->scale);
+    transform = glm::rotate(transform, model->rotation.x, glm::vec3(1, 0, 0));
+    transform = glm::rotate(transform, model->rotation.y, glm::vec3(0, 1, 0));
+    transform = glm::rotate(transform, model->rotation.z, glm::vec3(0, 0, 1));
+    transform = glm::translate(transform, model->position);
 
     m_litProgram->Use();
 
@@ -350,55 +350,58 @@ void GraphicsPipeline::RenderModel(Model& model, glm::mat4 view, glm::mat4 proje
     m_litProgram->UploadUniformVec3("lightDirection", normalize(glm::vec3(-1, -1, -1)));
     m_litProgram->UploadUniformVec3("viewDirection", normalize(camera.target - camera.position));
 
-    for (int i = 0; i < model.meshes.size(); i++) {
-        m_litProgram->UploadUniformVec3("color", model.meshes[i].material.color);
+    for (int i = 0; i < model->meshes.size(); i++) {
+        m_litProgram->UploadUniformVec3("color", model->meshes[i].material.color);
 
-        model.meshes[i].vao->Bind();
-        glDrawElements(GL_TRIANGLES, model.meshes[i].indices.size(), GL_UNSIGNED_INT, 0);
-        model.meshes[i].vao->Unbind();
+        model->meshes[i].vao->Bind();
+        glDrawElements(GL_TRIANGLES, model->meshes[i].indices.size(), GL_UNSIGNED_INT, 0);
+        model->meshes[i].vao->Unbind();
     }
 
     glUseProgram(0);
 }
 
-void GraphicsPipeline::RenderLinePath(LinePath& linePath, glm::mat4 view, glm::mat4 projection) {
+void GraphicsPipeline::RenderLinePath(LinePath* linePath, glm::mat4 view, glm::mat4 projection) {
     //draw curves (for debug)
     m_linePathProgram->Use();
     m_linePathProgram->UploadUniformMat4("view", view);
     m_linePathProgram->UploadUniformMat4("projection", projection);
     m_linePathProgram->UploadUniformVec4("tint", glm::vec4(1.0f));
     m_linePathProgram->UploadUniformMat4("transform", glm::identity<glm::mat4>());
-    linePath.vao->Bind();
-    glDrawArrays(GL_LINE_STRIP, 0, linePath.positions.size() / 3);
-    linePath.vao->Unbind();
+    linePath->vao->Bind();
+    glDrawArrays(GL_LINE_STRIP, 0, linePath->positions.size() / 3);
+    linePath->vao->Unbind();
     glUseProgram(0);
 }
 
-void GraphicsPipeline::RenderPipe(Pipe &pipe, glm::mat4 view, glm::mat4 projection, Camera camera) {
+void GraphicsPipeline::RenderPipe(Pipe* pipe, glm::mat4 view, glm::mat4 projection, Camera camera) {
+    glm::vec3 pressureColorModifier = glm::vec3(pipe->totalInternalPressure);
+    glm::vec3 finalColor = pipe->color + pressureColorModifier;
+
     m_pipeProgram->Use();
     m_pipeProgram->UploadUniformMat4("projection", projection);
     m_pipeProgram->UploadUniformMat4("view", view);
     m_pipeProgram->UploadUniformMat4("transform", glm::identity<glm::mat4>());
-    m_pipeProgram->UploadUniformVec3("lightColor", pipe.color);
-    m_pipeProgram->UploadUniformVec3("darkColor", pipe.color / 3.0f);
-    m_pipeProgram->UploadUniformVec3("fresnelColor", pipe.color / 2.0f);
+    m_pipeProgram->UploadUniformVec3("lightColor", finalColor);
+    m_pipeProgram->UploadUniformVec3("darkColor", finalColor / 3.0f);
+    m_pipeProgram->UploadUniformVec3("fresnelColor", finalColor / 2.0f);
     m_pipeProgram->UploadUniformVec3("lightDirection", normalize(glm::vec3(-1, -1, -1)));
     m_pipeProgram->UploadUniformVec3("viewDirection", normalize(camera.target - camera.position));
-    pipe.vao->Bind();
-    glDrawElements(GL_TRIANGLES, pipe.indices.size(), GL_UNSIGNED_INT, 0);
-    pipe.vao->Unbind();
+    pipe->vao->Bind();
+    glDrawElements(GL_TRIANGLES, pipe->indices.size(), GL_UNSIGNED_INT, 0);
+    pipe->vao->Unbind();
     glUseProgram(0);
 }
 
 // --Important-- this function contains all logic responsible for editing and controlling pipes
-void GraphicsPipeline::UpdateGeometry(Scene &scene) {
+void GraphicsPipeline::UpdateGeometry(Scene* scene) {
     //calculate matricies
-    glm::mat4 view = glm::lookAt(scene.camera.position, scene.camera.target, scene.camera.up);
-    glm::mat4 projection = glm::perspective(glm::radians(scene.camera.fov), ((float)p_window->GetWindowDimentions().x / (float)p_window->GetWindowDimentions().y), 0.001f, 10000.0f);
+    glm::mat4 view = glm::lookAt(scene->camera.position, scene->camera.target, scene->camera.up);
+    glm::mat4 projection = glm::perspective(glm::radians(scene->camera.fov), ((float)p_window->GetWindowDimentions().x / (float)p_window->GetWindowDimentions().y), 0.001f, 10000.0f);
 
     //calculate world space mouse position for object moving
-    glm::vec3 planeNormal = glm::normalize(scene.camera.target - scene.camera.position);
-    glm::vec3 planePosition = m_currentSelectedControlIndex != -1 ? scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position : glm::vec3(0.0);
+    glm::vec3 planeNormal = glm::normalize(scene->camera.target - scene->camera.position);
+    glm::vec3 planePosition = m_currentSelectedControlIndex != -1 ? scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].position : glm::vec3(0.0);
     glm::vec2 ndc = glm::vec2((2.0f * Input::mousePosition.x) / p_window->GetWindowDimentions().x - 1.0f, 1.0f - (2.0 * Input::mousePosition.y) / p_window->GetWindowDimentions().y);
     glm::mat4 inverseViewProjectionMatrix = glm::inverse(projection * view);
     glm::vec4 nearClip = {ndc.x, ndc.y, -1.0f, 1.0f};
@@ -423,13 +426,17 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
 
     //find possible connection point
     glm::vec3 connectionPoint;
+    Model* connectedSimulationObjectModel;
+    int connectedSimulationObjectType = 0;
     int connectionPointIndex = -1;
 
     if (m_currentSelectedControlIndex != -1 && m_currentSelectedPipeIndex != -1) {
-        for (int i = 0; i < scene.models.size(); i++) {
-            connectionPointIndex = scene.models[i].GetCurrentConnectionPointIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
+        for (int i = 0; i < scene->models.size(); i++) {
+            connectionPointIndex = scene->models[i]->GetCurrentConnectionPointIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
             if (connectionPointIndex != -1) {
-                connectionPoint = scene.models[i].GetGlobalConnectionPoint(connectionPointIndex);
+                connectionPoint = scene->models[i]->GetGlobalConnectionPoint(connectionPointIndex);
+                connectedSimulationObjectModel = scene->models[i];
+                connectedSimulationObjectType = scene->models[i]->simulationObjectType;
                 break;
             }
         }
@@ -437,8 +444,8 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
 
     //manage gizmo selection and linePath manipulation
     if (Input::IsMouseButtonJustPressed(GLFW_MOUSE_BUTTON_1) && m_currentSelectedControlIndex != -1) {
-        for (int i = 0; i < scene.pipes.size(); i++) {
-            m_currentSelectedControlIndex = scene.pipes[i].path.GetSelectedControlIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions(), scene.pipes[i].radius);
+        for (int i = 0; i < scene->pipes.size(); i++) {
+            m_currentSelectedControlIndex = scene->pipes[i]->path.GetSelectedControlIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions(), scene->pipes[i]->radius);
             if(m_currentSelectedControlIndex != -1) {
                 m_currentSelectedPipeIndex = i;
                 return;
@@ -448,8 +455,8 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
         ClearSelection(scene);
     }
     if (Input::IsMouseButtonJustReleased(GLFW_MOUSE_BUTTON_1)) {
-        for (int i = 0; i < scene.pipes.size(); i++) {
-            m_currentSelectedControlIndex = scene.pipes[i].path.GetSelectedControlIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions(), scene.pipes[i].radius);
+        for (int i = 0; i < scene->pipes.size(); i++) {
+            m_currentSelectedControlIndex = scene->pipes[i]->path.GetSelectedControlIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions(), scene->pipes[i]->radius);
             if(m_currentSelectedControlIndex != -1) {
                 m_currentSelectedPipeIndex = i;
                 return;
@@ -460,7 +467,7 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
     }
 
     if (Input::IsKeyJustPressed(GLFW_KEY_LEFT_SHIFT) && m_currentSelectedControlIndex != -1 && m_currentSelectedPipeIndex != -1) {
-        m_origin = scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position;
+        m_origin = scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].position;
     }
     if (Input::IsKeyJustPressed(GLFW_KEY_LEFT_CONTROL)) {
         m_origin = glm::vec3(0.0, 0.0, 0.0);
@@ -474,59 +481,62 @@ void GraphicsPipeline::UpdateGeometry(Scene &scene) {
     if (m_currentSelectedControlIndex != -1) {
         if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_1] == GLFW_PRESS) {
             if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] != GLFW_RELEASE || Input::keyStates[GLFW_KEY_LEFT_CONTROL] != GLFW_RELEASE) {
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = m_origin + (delta * m_axis);
+                scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].position = m_origin + (delta * m_axis);
             }
             else {
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = worldPos;
+                scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].position = worldPos;
             }
 
-            if (connectionPointIndex != -1 && (m_currentSelectedControlIndex == 0 || m_currentSelectedControlIndex == scene.pipes[m_currentSelectedPipeIndex].path.controls.size()-1)) {
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].position = connectionPoint;
+            if (connectionPointIndex != -1 && (m_currentSelectedControlIndex == 0 || m_currentSelectedControlIndex == scene->pipes[m_currentSelectedPipeIndex]->path.controls.size()-1)) {
+                scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].position = connectionPoint;
             }
 
-            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
+            scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].connectedSimulationObjectType = connectedSimulationObjectType;
+            scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].connectedSimulationObjectModel = connectedSimulationObjectModel;
+
+            scene->pipes[m_currentSelectedPipeIndex]->UpdatePositionsBuffer();
         }
 
         if (Input::IsKeyJustPressed(GLFW_KEY_DELETE)) {
-            scene.pipes[m_currentSelectedPipeIndex].path.Delete(m_currentSelectedControlIndex);
-            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
+            scene->pipes[m_currentSelectedPipeIndex]->path.Delete(m_currentSelectedControlIndex);
+            scene->pipes[m_currentSelectedPipeIndex]->UpdatePositionsBuffer();
             m_currentSelectedControlIndex = -1;
         }
 
         if ((Input::keyStates[GLFW_KEY_B] == GLFW_PRESS || Input::keyStates[GLFW_KEY_B] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0) {
-            if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.pipes[m_currentSelectedPipeIndex].path.controls.size()) {
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber += Input::mouseScrollVector.y;
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber = std::clamp(scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelNumber, 0, 3);
-                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
+            if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene->pipes[m_currentSelectedPipeIndex]->path.controls.size()) {
+                scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].bevelNumber += Input::mouseScrollVector.y;
+                scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].bevelNumber = std::clamp(scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].bevelNumber, 0, 3);
+                scene->pipes[m_currentSelectedPipeIndex]->UpdatePositionsBuffer();
             }
         }
 
         if ((Input::keyStates[GLFW_KEY_R] == GLFW_PRESS || Input::keyStates[GLFW_KEY_R] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0) {
-            if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene.pipes[m_currentSelectedPipeIndex].path.controls.size()) {
-                scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].bevelRadius += Input::mouseScrollVector.y / 100.0f;
-                scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
+            if (m_currentSelectedControlIndex - 1 >= 0 && m_currentSelectedControlIndex + 1 < scene->pipes[m_currentSelectedPipeIndex]->path.controls.size()) {
+                scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].bevelRadius += Input::mouseScrollVector.y / 100.0f;
+                scene->pipes[m_currentSelectedPipeIndex]->UpdatePositionsBuffer();
             }
         }
 
         if ((Input::keyStates[GLFW_KEY_S] == GLFW_PRESS || Input::keyStates[GLFW_KEY_S] == GLFW_REPEAT) && Input::mouseScrollVector.y != 0) {
-            scene.pipes[m_currentSelectedPipeIndex].radius += Input::mouseScrollVector.y / 100.0f;
-            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
+            scene->pipes[m_currentSelectedPipeIndex]->radius += Input::mouseScrollVector.y / 100.0f;
+            scene->pipes[m_currentSelectedPipeIndex]->UpdatePositionsBuffer();
         }
 
-        if (Input::IsKeyJustReleased(GLFW_KEY_E) && (m_currentSelectedControlIndex == 0 || m_currentSelectedControlIndex == scene.pipes[m_currentSelectedPipeIndex].path.controls.size()-1)) {
-            int newSelectedControl = scene.pipes[m_currentSelectedPipeIndex].path.Extrude(m_currentSelectedControlIndex, worldPos);
-            scene.pipes[m_currentSelectedPipeIndex].UpdatePositionsBuffer();
+        if (Input::IsKeyJustReleased(GLFW_KEY_E) && (m_currentSelectedControlIndex == 0 || m_currentSelectedControlIndex == scene->pipes[m_currentSelectedPipeIndex]->path.controls.size()-1)) {
+            int newSelectedControl = scene->pipes[m_currentSelectedPipeIndex]->path.Extrude(m_currentSelectedControlIndex, worldPos);
+            scene->pipes[m_currentSelectedPipeIndex]->UpdatePositionsBuffer();
             ClearSelection(scene);
             m_currentSelectedControlIndex = newSelectedControl;
-            scene.pipes[m_currentSelectedPipeIndex].path.controls[m_currentSelectedControlIndex].selected = true;
+            scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].selected = true;
         }
     }
 }
 
-void GraphicsPipeline::RenderScene(Scene& scene) {
+void GraphicsPipeline::RenderScene(Scene* scene) {
     //calculate matricies
-    glm::mat4 view = glm::lookAt(scene.camera.position, scene.camera.target, scene.camera.up);
-    glm::mat4 projection = glm::perspective(glm::radians(scene.camera.fov), ((float)p_window->GetWindowDimentions().x / (float)p_window->GetWindowDimentions().y), 0.001f, 10000.0f);
+    glm::mat4 view = glm::lookAt(scene->camera.position, scene->camera.target, scene->camera.up);
+    glm::mat4 projection = glm::perspective(glm::radians(scene->camera.fov), ((float)p_window->GetWindowDimentions().x / (float)p_window->GetWindowDimentions().y), 0.001f, 10000.0f);
 
     //set opengl viewport and clear state
     glViewport(0,0,p_window->GetWindowDimentions().x,p_window->GetWindowDimentions().y);
@@ -554,38 +564,38 @@ void GraphicsPipeline::RenderScene(Scene& scene) {
     glEnable(GL_DEPTH_TEST);
 
     //render meshes in scene
-    for (int i = 0; i < scene.models.size(); i++) {
-        RenderModel(scene.models[i], view, projection, scene.camera);
+    for (int i = 0; i < scene->models.size(); i++) {
+        RenderModel(scene->models[i], view, projection, scene->camera);
     }
 
     //render pipes in scene
-    for (int i = 0; i < scene.pipes.size(); i++) {
-        RenderPipe(scene.pipes[i], view, projection, scene.camera);
-        DrawLinePathGizmos(scene.pipes[i].path, scene.camera);
+    for (int i = 0; i < scene->pipes.size(); i++) {
+        RenderPipe(scene->pipes[i], view, projection, scene->camera);
+        DrawLinePathGizmos(scene->pipes[i]->path, scene->camera);
     }
 
-    for (int i = 0; i < scene.models.size(); i++) {
-        int connectionPointIndex = scene.models[i].GetCurrentConnectionPointIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
+    for (int i = 0; i < scene->models.size(); i++) {
+        int connectionPointIndex = scene->models[i]->GetCurrentConnectionPointIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
         if (connectionPointIndex != -1) {
-            glm::vec3 connectionPoint = scene.models[i].GetGlobalConnectionPoint(connectionPointIndex);
-            DrawDebugSphere3D(connectionPoint, scene.models[i].selectionRadius, glm::vec3(1,1,0), scene.camera);
+            glm::vec3 connectionPoint = scene->models[i]->GetGlobalConnectionPoint(connectionPointIndex);
+            DrawDebugSphere3D(connectionPoint, scene->models[i]->selectionRadius, glm::vec3(1,1,0), scene->camera);
         }
     }
 }
 
 
-void GraphicsPipeline::DrawUI(Scene& scene) {
+void GraphicsPipeline::DrawUI(Scene* scene) {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
     //orientation guizmo and ui
     glm::mat4 view;
-    view = glm::lookAt(scene.camera.position, scene.camera.target, scene.camera.up);
+    view = glm::lookAt(scene->camera.position, scene->camera.target, scene->camera.up);
     ImOGuizmo::SetRect(p_window->GetWindowDimentions().x - 150, 60, 100.0f);
     ImOGuizmo::BeginFrame();
 
-    glm::mat4 projection = glm::perspective(glm::radians(scene.camera.fov), (float)p_window->GetWindowDimentions().y/p_window->GetWindowDimentions().x, 0.001f, 10000.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(scene->camera.fov), (float)p_window->GetWindowDimentions().y/p_window->GetWindowDimentions().x, 0.001f, 10000.0f);
     if (!ImOGuizmo::DrawGizmo((float*)&view, (float*)&projection)){
         //maybe implement something here later
     }
@@ -604,8 +614,8 @@ void GraphicsPipeline::DrawUI(Scene& scene) {
     //vertex locked axis
     if (m_currentSelectedControlIndex != -1) {
         if ((Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_REPEAT) && m_currentSelectedControlIndex != -1) {
-            DrawDebugLine3D(m_origin + (-100.0f * m_axis), m_origin + (100.0f * m_axis), abs(m_axis), scene.camera);
-            DrawDebugSphere3D(m_origin, 0.15f, abs(m_axis), scene.camera);
+            DrawDebugLine3D(m_origin + (-100.0f * m_axis), m_origin + (100.0f * m_axis), abs(m_axis), scene->camera);
+            DrawDebugSphere3D(m_origin, 0.15f, abs(m_axis), scene->camera);
         }
     }
 

@@ -13,57 +13,60 @@ Application::Application(std::string version) {
     m_version = version;
     m_window = new Window("R.E.S " + version, 1600, 1200);
     m_graphicsPipeline = new GraphicsPipeline(m_window);
+    m_simulationPipeline = new SimulationPipeline();
 }
 
 void Application::Initialize() {
     m_window->Initialize();
     m_graphicsPipeline->Initialize();
+    m_simulationPipeline->Initialize();
 
     //testing
-    scene = {};
-    scene.camera = {};
+    m_scene = new Scene();
+    m_scene->camera = {};
 
-    scene.models.push_back(Tank({}, 10.0f, 10.0f));
-    scene.models.push_back(ElectricPump());
-    scene.models[0].position.x = 2.0f;
-    scene.models[1].position.x = -2.0f;
+    m_scene->models.push_back(new Tank({}, 10.0f, 10.0f));
+    m_scene->models.push_back(new ElectricPump());
+    m_scene->models[0]->position.x = 2.0f;
+    m_scene->models[1]->position.x = -2.0f;
 
-    scene.pipes.push_back({{{
+    m_scene->pipes.push_back(new Pipe({{
             glm::vec3(0.0f, 0.0f, -1.0f),
             glm::vec3(0.0f, 0.0f, 1.0f)
-        }}});
+        }}));
 
-    m_graphicsPipeline->RegisterScene(scene);
+    m_graphicsPipeline->RegisterScene(m_scene);
+    m_simulationPipeline->RegisterScene(m_scene);
 }
 
 void Application::MoveCamera() {
-    //update camera position
+        //update camera position
         glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-        glm::vec3 cameraForward = glm::normalize(scene.camera.target - scene.camera.position);
+        glm::vec3 cameraForward = glm::normalize(m_scene->camera.target - m_scene->camera.position);
         glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraForward));
         glm::vec3 cameraUp = glm::normalize(glm::cross(cameraForward, cameraRight));
         if (Input::mouseButtonStates[GLFW_MOUSE_BUTTON_3] == GLFW_PRESS) {
             if (Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_SHIFT] == GLFW_REPEAT) {
-                scene.camera.position += ((cameraRight * Input::mouseDelta.x + cameraUp * Input::mouseDelta.y) / 200.0f) * (float)pow(scene.camera.zoomFactor, 5);
-                scene.camera.target += ((cameraRight * Input::mouseDelta.x + cameraUp * Input::mouseDelta.y) / 200.0f) * (float)pow(scene.camera.zoomFactor,5);
+                m_scene->camera.position += ((cameraRight * Input::mouseDelta.x + cameraUp * Input::mouseDelta.y) / 200.0f) * (float)pow(m_scene->camera.zoomFactor, 5);
+                m_scene->camera.target += ((cameraRight * Input::mouseDelta.x + cameraUp * Input::mouseDelta.y) / 200.0f) * (float)pow(m_scene->camera.zoomFactor,5);
             }
             else if (Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_PRESS || Input::keyStates[GLFW_KEY_LEFT_CONTROL] == GLFW_REPEAT) {
-                float distanceMagnifier = pow(glm::distance(scene.camera.target, scene.camera.position), 1.7f);
-                scene.camera.position += ((cameraRight * Input::mouseDelta.x + cameraForward * Input::mouseDelta.y) / 200.0f) * distanceMagnifier;
-                scene.camera.target += ((cameraRight * Input::mouseDelta.x + cameraForward * Input::mouseDelta.y) / 200.0f) * distanceMagnifier;
+                float distanceMagnifier = pow(glm::distance(m_scene->camera.target, m_scene->camera.position), 1.7f);
+                m_scene->camera.position += ((cameraRight * Input::mouseDelta.x + cameraForward * Input::mouseDelta.y) / 200.0f) * distanceMagnifier;
+                m_scene->camera.target += ((cameraRight * Input::mouseDelta.x + cameraForward * Input::mouseDelta.y) / 200.0f) * distanceMagnifier;
             }
             else {
-                scene.camera.RotateAround(-Input::mouseDelta.x / 500.0f, glm::vec3(0, 1, 0), scene.camera.target);
-                scene.camera.RotateAround(Input::mouseDelta.y / 500.0f, cameraRight, scene.camera.target);
-                scene.camera.rotation.x = glm::clamp(scene.camera.rotation.x, -glm::pi<float>(), glm::pi<float>());
-                scene.camera.rotation.z = glm::clamp(scene.camera.rotation.z, -glm::pi<float>(), glm::pi<float>());
+                m_scene->camera.RotateAround(-Input::mouseDelta.x / 500.0f, glm::vec3(0, 1, 0), m_scene->camera.target);
+                m_scene->camera.RotateAround(Input::mouseDelta.y / 500.0f, cameraRight, m_scene->camera.target);
+                m_scene->camera.rotation.x = glm::clamp(m_scene->camera.rotation.x, -glm::pi<float>(), glm::pi<float>());
+                m_scene->camera.rotation.z = glm::clamp(m_scene->camera.rotation.z, -glm::pi<float>(), glm::pi<float>());
             }
         }
         //to ensure that we do not zoom while beveling an edge
         if (Input::keyStates[GLFW_KEY_B] == GLFW_RELEASE && Input::keyStates[GLFW_KEY_R] == GLFW_RELEASE && Input::keyStates[GLFW_KEY_S] == GLFW_RELEASE) {
-            scene.camera.position += (scene.camera.position - scene.camera.target) * (-Input::mouseScrollVector.y / 20.0f);
-            scene.camera.zoomFactor += (-Input::mouseScrollVector.y / 1000.0f);
-            scene.camera.zoomFactor = glm::clamp(scene.camera.zoomFactor, 0.000001f, 1000000.0f);
+            m_scene->camera.position += (m_scene->camera.position - m_scene->camera.target) * (-Input::mouseScrollVector.y / 20.0f);
+            m_scene->camera.zoomFactor += (-Input::mouseScrollVector.y / 1000.0f);
+            m_scene->camera.zoomFactor = glm::clamp(m_scene->camera.zoomFactor, 0.000001f, 1000000.0f);
         }
 }
 
@@ -74,9 +77,10 @@ void Application::Run() {
         MoveCamera();
 
         //drawing
-        m_graphicsPipeline->UpdateGeometry(scene);
-        m_graphicsPipeline->RenderScene(scene);
-        m_graphicsPipeline->DrawUI(scene);
+        m_graphicsPipeline->UpdateGeometry(m_scene);
+        m_simulationPipeline->StepSimulation(m_scene);
+        m_graphicsPipeline->RenderScene(m_scene);
+        m_graphicsPipeline->DrawUI(m_scene);
 
         //reset state
         Input::Refresh();
@@ -84,12 +88,14 @@ void Application::Run() {
 }
 
 void Application::Close() {
-    scene.CleanUp();
+    m_scene->CleanUp();
     m_graphicsPipeline->CleanUp();
     m_window->Close();
 }
 
 Application::~Application() {
+    delete m_scene;
     delete m_window;
     delete m_graphicsPipeline;
+    delete m_simulationPipeline;
 }

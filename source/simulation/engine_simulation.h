@@ -10,6 +10,13 @@
 
 #endif //ENGINE_SIMULATION_H
 
+enum SimulationObjectType {
+    NONE,
+    TANK,
+    PUMP,
+    ENGINE
+};
+
 struct Tank : Model {
     Gas storedGas = {};
     float volume = 0.0f;
@@ -20,6 +27,8 @@ struct Tank : Model {
 
 struct Pump : Model {
     Pump(Model model) : Model(model) {};
+
+    float pressureMultiplier = 1.5f;
 };
 
 struct ElectricPump : Pump {
@@ -27,5 +36,14 @@ struct ElectricPump : Pump {
 };
 
 struct Engine : Model {
+    Engine();
+};
 
+class SimulationPipeline {
+private:
+
+public:
+    void Initialize();
+    void RegisterScene(Scene* scene);
+    void StepSimulation(Scene* scene);
 };

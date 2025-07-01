@@ -67,15 +67,15 @@ class GraphicsPipeline {
 public:
     GraphicsPipeline(Window* window);
 
-    void RegisterMesh(Mesh& mesh);
-    void RegisterLinePath(LinePath& linePath);
-    void RegisterPipe(Pipe& pipe);
-    void RegisterScene(Scene& scene);
+    void RegisterMesh(Mesh* mesh);
+    void RegisterLinePath(LinePath* linePath);
+    void RegisterPipe(Pipe* pipe);
+    void RegisterScene(Scene* scene);
 
     void Initialize();
 
     //selection
-    void ClearSelection(Scene& scene);
+    void ClearSelection(Scene* scene);
 
     //immediate-mode drawing
     void DrawGasSimulation(GasSimulation gasSimulation, Camera camera);
@@ -85,14 +85,14 @@ public:
     void DrawLinePathGizmos(LinePath linePath, Camera camera);
 
     //non rendering per-frame operations
-    void UpdateGeometry(Scene& scene);
+    void UpdateGeometry(Scene* scene);
 
     //rendering
-    void RenderModel(Model& model, glm::mat4 view, glm::mat4 projection, Camera camera);
-    void RenderLinePath(LinePath& linePath, glm::mat4 view, glm::mat4 projection);
-    void RenderPipe(Pipe& pipe, glm::mat4 view, glm::mat4 projection, Camera camera);
-    void RenderScene(Scene& scene);
-    void DrawUI(Scene& scene);
+    void RenderModel(Model* model, glm::mat4 view, glm::mat4 projection, Camera camera);
+    void RenderLinePath(LinePath* linePath, glm::mat4 view, glm::mat4 projection);
+    void RenderPipe(Pipe* pipe, glm::mat4 view, glm::mat4 projection, Camera camera);
+    void RenderScene(Scene* scene);
+    void DrawUI(Scene* scene);
 
     void CleanUp();
 };
