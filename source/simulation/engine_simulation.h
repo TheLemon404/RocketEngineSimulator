@@ -10,33 +10,30 @@
 
 #endif //ENGINE_SIMULATION_H
 
-enum SimulationObjectType {
-    NONE,
-    TANK,
-    PUMP,
-    ENGINE
-};
-
 struct Tank : Model {
     Gas storedGas = {};
     float volume = 0.0f;
     float storedAmount = 0.0f;;
 
     Tank(Gas storedGas, float volume, float storedAmount);
+
+    void ComputeControlPointPressure();
 };
 
 struct Pump : Model {
-    Pump(Model model) : Model(model) {};
-
-    float pressureMultiplier = 1.5f;
+    explicit Pump(const Model& model) : Model(model) {};
 };
 
 struct ElectricPump : Pump {
     ElectricPump();
+
+    void ComputeControlPointPressure();
 };
 
 struct Engine : Model {
     Engine();
+
+    void ComputeControlPointPressure();
 };
 
 class SimulationPipeline {

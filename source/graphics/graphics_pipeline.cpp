@@ -427,16 +427,15 @@ void GraphicsPipeline::UpdateGeometry(Scene* scene) {
     //find possible connection point
     glm::vec3 connectionPoint;
     Model* connectedSimulationObjectModel;
-    int connectedSimulationObjectType = 0;
     int connectionPointIndex = -1;
 
+    //check if the mouse is near a possible connection point to snap to
     if (m_currentSelectedControlIndex != -1 && m_currentSelectedPipeIndex != -1) {
         for (int i = 0; i < scene->models.size(); i++) {
             connectionPointIndex = scene->models[i]->GetCurrentConnectionPointIndex(Input::mousePosition, view, projection, p_window->GetWindowDimentions());
             if (connectionPointIndex != -1) {
                 connectionPoint = scene->models[i]->GetGlobalConnectionPoint(connectionPointIndex);
                 connectedSimulationObjectModel = scene->models[i];
-                connectedSimulationObjectType = scene->models[i]->simulationObjectType;
                 break;
             }
         }
@@ -487,12 +486,16 @@ void GraphicsPipeline::UpdateGeometry(Scene* scene) {
                 scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].position = worldPos;
             }
 
+            //if there is a possible connection point to snap to, do it now or disconnect from a previous point
             if (connectionPointIndex != -1 && (m_currentSelectedControlIndex == 0 || m_currentSelectedControlIndex == scene->pipes[m_currentSelectedPipeIndex]->path.controls.size()-1)) {
-                scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].position = connectionPoint;
+                if (connectionPointIndex != -1) {
+                    scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].position = connectionPoint;
+                    connectedSimulationObjectModel->connectedControls.push_back(&scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex]);
+                }
+                else {
+                    connectedSimulationObjectModel->connectedControls.pop_back();
+                }
             }
-
-            scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].connectedSimulationObjectType = connectedSimulationObjectType;
-            scene->pipes[m_currentSelectedPipeIndex]->path.controls[m_currentSelectedControlIndex].connectedSimulationObjectModel = connectedSimulationObjectModel;
 
             scene->pipes[m_currentSelectedPipeIndex]->UpdatePositionsBuffer();
         }

@@ -100,7 +100,6 @@ struct Control {
     bool selected = false;
     int bevelNumber = 0;
     int connectedSimulationObjectType = 0;
-    Model* connectedSimulationObjectModel = nullptr;
     float controlPointPressure = 0.0f;
 
     Control(glm::vec3 position) : position(position) {};
@@ -216,8 +215,8 @@ struct Mesh {
 struct Model {
     unsigned int id = rand();
     std::vector<glm::vec3> connectionPoints;
+    std::vector<Control*> connectedControls;
     float selectionRadius = 0.3f;
-    int simulationObjectType = 0;
 
     static Model LoadModelFromOBJ(std::string localPath);
 
@@ -231,6 +230,8 @@ struct Model {
 
     int GetCurrentConnectionPointIndex(glm::vec2 mousePosition, glm::mat4 view, glm::mat4 projection, glm::ivec2 screenResolution);
     glm::vec3 GetGlobalConnectionPoint(int connectionPointIndex) { return connectionPoints[connectionPointIndex] + position;}
+
+    virtual ~Model() = default;
 };
 
 struct Scene {
