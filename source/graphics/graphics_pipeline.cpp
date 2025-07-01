@@ -139,9 +139,9 @@ void GraphicsPipeline::Initialize() {
     m_checkersProgram->Compile(m_screenSpaceVertexShader, m_checkersFragmentShader);
 
     m_linePathVertexShader = new ShaderObject(GL_VERTEX_SHADER);
-    m_linePathVertexShader->Load("resources/shaders/linePath.vert");
+    m_linePathVertexShader->Load("resources/shaders/linepath.vert");
     m_linePathFragmentShader = new ShaderObject(GL_FRAGMENT_SHADER);
-    m_linePathFragmentShader->Load("resources/shaders/linePath.frag");
+    m_linePathFragmentShader->Load("resources/shaders/linepath.frag");
     m_linePathProgram = new ShaderProgramObject();
     m_linePathProgram->Compile(m_linePathVertexShader, m_linePathFragmentShader);
 

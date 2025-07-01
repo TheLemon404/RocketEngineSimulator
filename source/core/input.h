@@ -7,6 +7,8 @@
 #ifndef INPUT_H
 #define INPUT_H
 
+#include <cstdint>
+#define WIN32_LEAN_AND_MEAN
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <map>

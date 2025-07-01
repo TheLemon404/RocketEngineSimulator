@@ -244,6 +244,10 @@ Model Model::LoadModelFromOBJ(std::string localPath) {
 
     const aiScene* scene = Importer.ReadFile(localPath.c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
 
+    if (scene == nullptr) {
+        throw std::runtime_error("Failed to load model");
+    }
+
     std::vector<Mesh> resultMeshes;
     resultMeshes.resize(scene->mNumMeshes);
 
